@@ -99,7 +99,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
               <SelectValue placeholder={filter.label} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All {filter.label}</SelectItem>
+              <SelectItem value="all">All {filter.label}</SelectItem>
               {filter.options.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}

@@ -1,6 +1,6 @@
 // Airtable Configuration - Operators will paste real IDs here
 export const AT = {
-  baseId: process.env.AIRTABLE_BASE_ID || "appXXXXXXXXXXXXXX",
+  baseId: "appXXXXXXXXXXXXXX", // Operators will replace with real Airtable Base ID
   tables: {
     instagram: "tblIGXXXX", // IG Seeding
     spotify:   "tblSPXXXX", // Spotify Playlisting
