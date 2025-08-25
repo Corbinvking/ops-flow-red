@@ -148,7 +148,7 @@ const SoundCloud: React.FC = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="flex w-full">
         <ViewSidebar
           service="sc"
           currentView={currentView}
@@ -158,7 +158,7 @@ const SoundCloud: React.FC = () => {
         
         <SidebarInset>
           {/* Header */}
-          <div className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
+          <div className="sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
             <div className="flex h-14 items-center gap-4 px-6">
               <SidebarTrigger />
               <div className="flex-1" />
