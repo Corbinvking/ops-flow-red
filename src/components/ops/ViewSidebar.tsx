@@ -38,8 +38,8 @@ export const ViewSidebar: React.FC<ViewSidebarProps> = ({
   }));
 
   return (
-    <Sidebar className={collapsed ? "w-14" : "w-60"} collapsible="icon">
-      <SidebarContent className="pt-16">
+    <Sidebar className={`${collapsed ? "w-14" : "w-60"} top-28 bottom-auto h-[calc(100svh-7rem)]`} collapsible="icon">
+      <SidebarContent className="pt-0">
         <SidebarGroup>
           <SidebarGroupLabel>Views</SidebarGroupLabel>
           <SidebarGroupContent>
