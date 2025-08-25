@@ -3,7 +3,14 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
+import { AppLayout } from "./components/layout/AppLayout";
+import Dashboard from "./pages/Dashboard";
+import SoundCloud from "./pages/SoundCloud";
+import YouTube from "./pages/YouTube";
+import Instagram from "./pages/Instagram";
+import Spotify from "./pages/Spotify";
+import Visualizer from "./pages/Visualizer";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -15,7 +22,15 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
+          <Route path="/" element={<AppLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="soundcloud" element={<SoundCloud />} />
+            <Route path="youtube" element={<YouTube />} />
+            <Route path="instagram" element={<Instagram />} />
+            <Route path="spotify" element={<Spotify />} />
+            <Route path="visualizer" element={<Visualizer />} />
+            <Route path="settings" element={<Settings />} />
+          </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
