@@ -8,7 +8,7 @@ export const AppLayout: React.FC = () => {
     <div className="min-h-screen bg-background">
       <TopBar />
       <Navigation />
-      <main className="container mx-auto max-w-7xl px-4 py-6">
+      <main className="relative">
         <Outlet />
       </main>
     </div>

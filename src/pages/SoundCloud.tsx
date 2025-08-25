@@ -1,276 +1,310 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Upload, FileText, Download, Play, MoreVertical, Calendar, User, CheckCircle } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState } from 'react';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { ViewSidebar } from '@/components/ops/ViewSidebar';
+import { Toolbar } from '@/components/ops/Toolbar';
+import { KanbanBoard } from '@/components/ops/KanbanBoard';
+import { DataTable } from '@/components/ops/DataTable';
+import { BulkBar } from '@/components/ops/BulkBar';
+import { RecordDrawer } from '@/components/ops/RecordDrawer';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { 
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { mockAPI } from '@/data/mockData';
-import { Campaign, SCQueueItem } from '@/types';
-import { useToast } from '@/hooks/use-toast';
+  Plus, 
+  Upload, 
+  Download, 
+  Play, 
+  Calendar,
+  Target,
+  Zap
+} from 'lucide-react';
+import { useSCData } from '@/hooks/useSCData';
+import { getStatusColor } from '@/lib/ops';
+
+type ViewMode = 'operate' | 'data';
 
 const SoundCloud: React.FC = () => {
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [queue, setQueue] = useState<SCQueueItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<ViewMode>('operate');
+  const [currentView, setCurrentView] = useState('viwActiveCampaigns');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const { toast } = useToast();
+  const [selectedRecord, setSelectedRecord] = useState<any>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState('');
+  const [ownerFilter, setOwnerFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [campaignsResult, queueResult] = await Promise.all([
-          mockAPI.getCampaigns(),
-          mockAPI.getSCQueue(),
-        ]);
-        
-        setCampaigns(campaignsResult.filter(c => c.service === 'soundcloud'));
-        setQueue(queueResult);
-      } catch (error) {
-        toast({
-          title: 'Error loading data',
-          description: 'Failed to load SoundCloud data. Please try again.',
-          variant: 'destructive',
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+  const { campaigns, loading, updateCampaign, bulkUpdate } = useSCData(currentView);
 
-    loadData();
-  }, [toast]);
+  // Filter campaigns based on search and filters
+  const filteredCampaigns = campaigns.filter(campaign => {
+    const matchesSearch = !searchValue || 
+      campaign.trackInfo.toLowerCase().includes(searchValue.toLowerCase()) ||
+      campaign.client.toLowerCase().includes(searchValue.toLowerCase());
+    const matchesOwner = !ownerFilter || campaign.owner === ownerFilter;
+    const matchesStatus = !statusFilter || campaign.status === statusFilter;
+    
+    return matchesSearch && matchesOwner && matchesStatus;
+  });
 
-  const handleBulkAction = (action: string) => {
-    if (selectedIds.length === 0) {
-      toast({
-        title: 'No items selected',
-        description: 'Please select items to perform bulk actions.',
-        variant: 'destructive',
-      });
-      return;
+  // Kanban columns for operate mode
+  const kanbanColumns = [
+    {
+      id: 'active',
+      title: 'Active',
+      items: filteredCampaigns.filter(c => c.status === 'active'),
+      color: 'chip-success'
+    },
+    {
+      id: 'in_progress',
+      title: 'In Progress',
+      items: filteredCampaigns.filter(c => c.status === 'in_progress'),
+      color: 'chip-warning'
+    },
+    {
+      id: 'complete',
+      title: 'Complete',
+      items: filteredCampaigns.filter(c => c.status === 'complete'),
+      color: 'chip-success'
+    },
+    {
+      id: 'cancelled',
+      title: 'Cancelled',
+      items: filteredCampaigns.filter(c => c.status === 'cancelled'),
+      color: 'chip-danger'
+    }
+  ];
+
+  // Table columns for data mode
+  const tableColumns = [
+    { key: 'trackInfo', label: 'Track Info', sortable: true },
+    { key: 'client', label: 'Client', sortable: true },
+    { key: 'service', label: 'Service', sortable: true },
+    { key: 'goal', label: 'Goal', sortable: true },
+    { key: 'remaining', label: 'Remaining', sortable: true },
+    { key: 'status', label: 'Status', sortable: true },
+    { key: 'owner', label: 'Owner', sortable: true },
+    { key: 'startDate', label: 'Start Date', sortable: true }
+  ];
+
+  const handleStatusChange = (itemId: string, newStatus: string) => {
+    updateCampaign(itemId, { status: newStatus });
+  };
+
+  const handleBulkAction = (action: string, value?: any) => {
+    const updates: any = {};
+    
+    switch (action) {
+      case 'set_status':
+        updates.status = value;
+        break;
+      case 'assign_owner':
+        updates.owner = value;
+        break;
+      case 'set_start_today':
+        updates.startDate = new Date().toISOString().split('T')[0];
+        break;
+      case 'request_receipt':
+        updates.receipts = 'requested';
+        updates.notes = 'Receipt requested on ' + new Date().toLocaleDateString();
+        break;
     }
 
-    // Mock bulk action
-    toast({
-      title: 'Bulk action executed',
-      description: `${action} applied to ${selectedIds.length} items`,
-    });
+    bulkUpdate(selectedIds, updates);
     setSelectedIds([]);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'chip-success';
-      case 'in_progress': return 'chip-primary';
-      case 'failed': return 'chip-danger';
-      default: return 'chip';
+  const handleRecordClick = (record: any) => {
+    setSelectedRecord(record);
+    setDrawerOpen(true);
+  };
+
+  const handleRecordSave = (updates: any) => {
+    if (selectedRecord) {
+      updateCampaign(selectedRecord.id, updates);
     }
   };
 
+  // View counts for sidebar
+  const viewCounts = {
+    viwActiveCampaigns: campaigns.filter(c => c.status === 'active').length,
+    viwUpcoming: campaigns.filter(c => !c.startDate || new Date(c.startDate) > new Date()).length,
+    viwNoReceipt: campaigns.filter(c => c.receipts === 'pending').length,
+    viwAllCampaigns: campaigns.length
+  };
+
+  const owners = [...new Set(campaigns.map(c => c.owner))];
+  const statuses = [...new Set(campaigns.map(c => c.status))];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading campaigns...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-space-grotesk font-bold">SoundCloud Operations</h1>
-          <p className="text-foreground-muted mt-1">
-            Manage campaigns and automation queues for SoundCloud promotion.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <Upload className="h-4 w-4 mr-2" />
-            Import CSV
-          </Button>
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            Export Queue
-          </Button>
-          <Button size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            New Campaign
-          </Button>
-        </div>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full">
+        <ViewSidebar
+          service="sc"
+          currentView={currentView}
+          onViewChange={setCurrentView}
+          viewCounts={viewCounts}
+        />
+        
+        <SidebarInset>
+          {/* Header */}
+          <div className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
+            <div className="flex h-14 items-center gap-4 px-6">
+              <SidebarTrigger />
+              <div className="flex-1" />
+            </div>
+          </div>
+
+          {/* Main Content */}
+          <div className="p-6 space-y-6">
+            <Toolbar
+              title="SoundCloud Campaigns"
+              description="Manage SoundCloud promotion campaigns and automation queue"
+              mode={viewMode}
+              onModeChange={setViewMode}
+              searchValue={searchValue}
+              onSearchChange={setSearchValue}
+              recordCount={filteredCampaigns.length}
+              selectedCount={selectedIds.length}
+              filters={[
+                {
+                  key: 'owner',
+                  label: 'Owner',
+                  value: ownerFilter,
+                  options: owners.map(owner => ({ value: owner, label: owner })),
+                  onChange: setOwnerFilter
+                },
+                {
+                  key: 'status',
+                  label: 'Status',
+                  value: statusFilter,
+                  options: statuses.map(status => ({ value: status, label: status })),
+                  onChange: setStatusFilter
+                }
+              ]}
+              actions={[
+                { label: 'New Campaign', icon: Plus, onClick: () => {} },
+                { label: 'Import CSV', icon: Upload, onClick: () => {}, variant: 'outline' },
+                { label: 'Export Queue', icon: Download, onClick: () => {}, variant: 'outline' }
+              ]}
+            />
+
+            {viewMode === 'operate' ? (
+              <div className="space-y-6">
+                {/* Quick Actions */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Card className="card-glow">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <Play className="h-5 w-5 text-primary" />
+                        Start Today Macro
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Set selected campaigns to start today and mark as active
+                      </p>
+                      <Button 
+                        size="sm" 
+                        disabled={selectedIds.length === 0}
+                        onClick={() => handleBulkAction('set_start_today')}
+                      >
+                        Apply to {selectedIds.length} campaigns
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="card-glow">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <Target className="h-5 w-5 text-warning" />
+                        Request Receipt
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Mark campaigns as receipt requested with timestamp
+                      </p>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        disabled={selectedIds.length === 0}
+                        onClick={() => handleBulkAction('request_receipt')}
+                      >
+                        Request for {selectedIds.length}
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="card-glow">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <Zap className="h-5 w-5 text-success" />
+                        Queue Generator
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Generate automation queue for active campaigns
+                      </p>
+                      <Button variant="outline" size="sm">
+                        Generate Queue
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Kanban Board */}
+                <KanbanBoard
+                  columns={kanbanColumns}
+                  selectedIds={selectedIds}
+                  onSelectionChange={setSelectedIds}
+                  onItemClick={handleRecordClick}
+                  onStatusChange={handleStatusChange}
+                  service="sc"
+                />
+              </div>
+            ) : (
+              /* Data Mode */
+              <DataTable
+                data={filteredCampaigns}
+                columns={tableColumns}
+                selectedIds={selectedIds}
+                onSelectionChange={setSelectedIds}
+                onItemClick={handleRecordClick}
+              />
+            )}
+          </div>
+        </SidebarInset>
       </div>
 
       {/* Bulk Actions Bar */}
-      {selectedIds.length > 0 && (
-        <Card className="card bg-primary/10 border-primary/20">
-          <CardContent className="py-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">
-                {selectedIds.length} items selected
-              </span>
-              <div className="flex items-center gap-2">
-                <Button size="sm" onClick={() => handleBulkAction('Mark Done')}>
-                  <CheckCircle className="h-4 w-4 mr-1" />
-                  Mark Done
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => handleBulkAction('Reschedule')}>
-                  <Calendar className="h-4 w-4 mr-1" />
-                  Reschedule
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => setSelectedIds([])}>
-                  Clear
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <BulkBar
+        selectedCount={selectedIds.length}
+        onClear={() => setSelectedIds([])}
+        onBulkAction={handleBulkAction}
+        service="sc"
+      />
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Campaigns */}
-        <Card className="xl:col-span-2 card">
-          <CardHeader>
-            <CardTitle>Active Campaigns</CardTitle>
-            <CardDescription>
-              Track progress of your SoundCloud promotion campaigns
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {campaigns.map((campaign) => (
-                <div key={campaign.id} className="p-4 rounded-lg bg-surface hover:bg-surface-elevated transition-colors">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <h4 className="font-medium text-foreground">{campaign.name}</h4>
-                      <p className="text-sm text-foreground-muted">{campaign.trackUrl}</p>
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          <Play className="mr-2 h-4 w-4" />
-                          Open Campaign
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <FileText className="mr-2 h-4 w-4" />
-                          View Details
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4 mb-3">
-                    <div className="text-center">
-                      <p className="text-lg font-bold text-foreground">
-                        {campaign.targets?.reposts || 0}
-                      </p>
-                      <p className="text-xs text-foreground-muted">Reposts Target</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-lg font-bold text-foreground">
-                        {campaign.targets?.likes || 0}
-                      </p>
-                      <p className="text-xs text-foreground-muted">Likes Target</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-lg font-bold text-foreground">
-                        {campaign.targets?.comments || 0}
-                      </p>
-                      <p className="text-xs text-foreground-muted">Comments Target</p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-foreground-muted">Progress</span>
-                      <span className="font-medium text-foreground">{campaign.progress}%</span>
-                    </div>
-                    <Progress value={campaign.progress} className="h-2" />
-                  </div>
-
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
-                    <div className="flex items-center gap-2 text-sm text-foreground-muted">
-                      <User className="h-3 w-3" />
-                      {campaign.owner}
-                    </div>
-                    <Badge className={getStatusColor(campaign.status)}>
-                      {campaign.status.replace('_', ' ')}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Queue */}
-        <Card className="card">
-          <CardHeader>
-            <CardTitle>Automation Queue</CardTitle>
-            <CardDescription>
-              Scheduled actions and their status
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {queue.map((item) => (
-                <div 
-                  key={item.id}
-                  className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                    selectedIds.includes(item.id) 
-                      ? 'bg-primary/10 border border-primary/20' 
-                      : 'bg-surface hover:bg-surface-elevated'
-                  }`}
-                  onClick={() => {
-                    if (selectedIds.includes(item.id)) {
-                      setSelectedIds(prev => prev.filter(id => id !== item.id));
-                    } else {
-                      setSelectedIds(prev => [...prev, item.id]);
-                    }
-                  }}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <Badge className={getStatusColor(item.status)} variant="secondary">
-                      {item.action}
-                    </Badge>
-                    <Badge className={getStatusColor(item.status)}>
-                      {item.status}
-                    </Badge>
-                  </div>
-                  
-                  <p className="text-sm font-medium text-foreground mb-1 truncate">
-                    {item.trackUrl.split('/').pop()}
-                  </p>
-                  
-                  {item.scheduledFor && (
-                    <p className="text-xs text-foreground-muted">
-                      Scheduled: {new Date(item.scheduledFor).toLocaleString()}
-                    </p>
-                  )}
-                  
-                  {item.completedAt && (
-                    <p className="text-xs text-success">
-                      Completed: {new Date(item.completedAt).toLocaleString()}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+      {/* Record Drawer */}
+      <RecordDrawer
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        record={selectedRecord}
+        service="sc"
+        onSave={handleRecordSave}
+      />
+    </SidebarProvider>
   );
 };
 

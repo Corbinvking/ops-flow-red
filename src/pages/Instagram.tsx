@@ -1,398 +1,309 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Grid, List, Filter, Calendar, User, Tag, Eye, MoreVertical } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState } from 'react';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import { ViewSidebar } from '@/components/ops/ViewSidebar';
+import { Toolbar } from '@/components/ops/Toolbar';
+import { KanbanBoard } from '@/components/ops/KanbanBoard';
+import { DataTable } from '@/components/ops/DataTable';
+import { BulkBar } from '@/components/ops/BulkBar';
+import { RecordDrawer } from '@/components/ops/RecordDrawer';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { mockAPI } from '@/data/mockData';
-import { IGPost, Priority, Status } from '@/types';
-import { useToast } from '@/hooks/use-toast';
+  Plus, 
+  Upload, 
+  Download, 
+  Zap,
+  Calendar,
+  User,
+  AlertTriangle
+} from 'lucide-react';
+import { useIGData } from '@/hooks/useIGData';
+
+type ViewMode = 'operate' | 'data';
 
 const Instagram: React.FC = () => {
-  const [posts, setPosts] = useState<IGPost[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'board' | 'table'>('board');
+  const [viewMode, setViewMode] = useState<ViewMode>('operate');
+  const [currentView, setCurrentView] = useState('viwBoard');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [filterOwner, setFilterOwner] = useState<string>('all');
-  const [filterPriority, setFilterPriority] = useState<string>('all');
-  const { toast } = useToast();
+  const [selectedRecord, setSelectedRecord] = useState<any>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState('');
+  const [ownerFilter, setOwnerFilter] = useState('');
+  const [priorityFilter, setPriorityFilter] = useState('');
 
-  useEffect(() => {
-    const loadPosts = async () => {
-      try {
-        const postsResult = await mockAPI.getIGPosts();
-        setPosts(postsResult);
-      } catch (error) {
-        toast({
-          title: 'Error loading posts',
-          description: 'Failed to load Instagram data. Please try again.',
-          variant: 'destructive',
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadPosts();
-  }, [toast]);
-
-  const handleStatusChange = async (postId: string, newStatus: Status) => {
-    try {
-      await mockAPI.updateIGPostStatus(postId, newStatus);
-      setPosts(prev => prev.map(post => 
-        post.id === postId ? { ...post, status: newStatus } : post
-      ));
-      toast({
-        title: 'Post updated',
-        description: `Post moved to ${newStatus.replace('_', ' ')}`,
-      });
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to update post status',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const getPriorityColor = (priority: Priority) => {
-    switch (priority) {
-      case 'urgent': return 'chip-danger';
-      case 'high': return 'chip-warning';
-      case 'medium': return 'chip-primary';
-      case 'low': return 'chip';
-      default: return 'chip';
-    }
-  };
-
-  const getStatusColor = (status: Status) => {
-    switch (status) {
-      case 'done': return 'chip-success';
-      case 'in_progress': return 'chip-primary';
-      case 'needs_qa': return 'chip-warning';
-      case 'backlog': return 'chip';
-      default: return 'chip';
-    }
-  };
-
-  const columns = [
-    { id: 'backlog', title: 'Backlog', status: 'backlog' as Status },
-    { id: 'in_progress', title: 'In Progress', status: 'in_progress' as Status },
-    { id: 'needs_qa', title: 'Needs QA', status: 'needs_qa' as Status },
-    { id: 'done', title: 'Done', status: 'done' as Status },
-  ];
+  const { posts, loading, updatePost, bulkUpdate } = useIGData(currentView);
 
   const filteredPosts = posts.filter(post => {
-    if (filterOwner !== 'all' && post.owner !== filterOwner) return false;
-    if (filterPriority !== 'all' && post.priority !== filterPriority) return false;
-    return true;
+    const matchesSearch = !searchValue || 
+      post.caption.toLowerCase().includes(searchValue.toLowerCase());
+    const matchesOwner = !ownerFilter || post.owner === ownerFilter;
+    const matchesPriority = !priorityFilter || post.priority === priorityFilter;
+    
+    return matchesSearch && matchesOwner && matchesPriority;
   });
 
-  const owners = [...new Set(posts.map(post => post.owner))];
+  const kanbanColumns = [
+    {
+      id: 'backlog',
+      title: 'Backlog',
+      items: filteredPosts.filter(p => p.status === 'backlog'),
+      color: 'chip'
+    },
+    {
+      id: 'in_progress',
+      title: 'In Progress',
+      items: filteredPosts.filter(p => p.status === 'in_progress'),
+      color: 'chip-warning'
+    },
+    {
+      id: 'needs_qa',
+      title: 'Needs QA',
+      items: filteredPosts.filter(p => p.status === 'needs_qa'),
+      color: 'chip-danger'
+    },
+    {
+      id: 'done',
+      title: 'Done',
+      items: filteredPosts.filter(p => p.status === 'done'),
+      color: 'chip-success'
+    }
+  ];
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-space-grotesk font-bold">Instagram Content</h1>
-          <p className="text-foreground-muted mt-1">
-            Manage your Instagram content pipeline from ideation to publication.
-          </p>
+  const tableColumns = [
+    { 
+      key: 'caption', 
+      label: 'Caption', 
+      sortable: true,
+      render: (value: string) => (
+        <div className="max-w-xs">
+          <p className="line-clamp-2 text-sm">{value}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center rounded-lg bg-surface p-1">
-            <Button
-              variant={viewMode === 'board' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('board')}
-            >
-              <Grid className="h-4 w-4 mr-2" />
-              Board
-            </Button>
-            <Button
-              variant={viewMode === 'table' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('table')}
-            >
-              <List className="h-4 w-4 mr-2" />
-              Table
-            </Button>
-          </div>
-          <Button size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            New Post
-          </Button>
+      )
+    },
+    { 
+      key: 'mediaUrl', 
+      label: 'Media', 
+      render: (value: string) => (
+        <img src={value} alt="Post" className="w-12 h-12 object-cover rounded" />
+      )
+    },
+    { key: 'owner', label: 'Owner', sortable: true },
+    { key: 'status', label: 'Status', sortable: true },
+    { key: 'priority', label: 'Priority', sortable: true },
+    { key: 'dueDate', label: 'Due Date', sortable: true }
+  ];
+
+  const handleStatusChange = (itemId: string, newStatus: string) => {
+    updatePost(itemId, { status: newStatus as any });
+  };
+
+  const handleBulkAction = (action: string, value?: any) => {
+    const updates: any = {};
+    
+    switch (action) {
+      case 'set_status':
+        updates.status = value;
+        break;
+      case 'assign_owner':
+        updates.owner = value;
+        break;
+      case 'trigger_final_report':
+        updates.sendFinalReport = true;
+        break;
+    }
+
+    bulkUpdate(selectedIds, updates);
+    setSelectedIds([]);
+  };
+
+  const handleRecordClick = (record: any) => {
+    setSelectedRecord(record);
+    setDrawerOpen(true);
+  };
+
+  const handleRecordSave = (updates: any) => {
+    if (selectedRecord) {
+      updatePost(selectedRecord.id, updates);
+    }
+  };
+
+  const viewCounts = {
+    viwBoard: posts.length,
+    viwAllPosts: posts.length,
+    viwDueSoon: posts.filter(p => {
+      const dueDate = new Date(p.dueDate);
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      return dueDate <= tomorrow;
+    }).length,
+    viwCompleted: posts.filter(p => p.status === 'done').length
+  };
+
+  const owners = [...new Set(posts.map(p => p.owner))];
+  const priorities = ['high', 'medium', 'low'];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading posts...</p>
         </div>
       </div>
+    );
+  }
 
-      {/* Filters */}
-      <Card className="card">
-        <CardContent className="py-4">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-foreground-muted" />
-              <span className="text-sm font-medium text-foreground-muted">Filters:</span>
+  return (
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full">
+        <ViewSidebar
+          service="ig"
+          currentView={currentView}
+          onViewChange={setCurrentView}
+          viewCounts={viewCounts}
+        />
+        
+        <SidebarInset>
+          <div className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
+            <div className="flex h-14 items-center gap-4 px-6">
+              <SidebarTrigger />
+              <div className="flex-1" />
             </div>
-            
-            <Select value={filterOwner} onValueChange={setFilterOwner}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Owner" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Owners</SelectItem>
-                {owners.map(owner => (
-                  <SelectItem key={owner} value={owner}>{owner}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          </div>
 
-            <Select value={filterPriority} onValueChange={setFilterPriority}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Priority" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Priorities</SelectItem>
-                <SelectItem value="urgent">Urgent</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="low">Low</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="p-6 space-y-6">
+            <Toolbar
+              title="Instagram Content"
+              description="Manage Instagram posts and content pipeline"
+              mode={viewMode}
+              onModeChange={setViewMode}
+              searchValue={searchValue}
+              onSearchChange={setSearchValue}
+              recordCount={filteredPosts.length}
+              selectedCount={selectedIds.length}
+              filters={[
+                {
+                  key: 'owner',
+                  label: 'Owner',
+                  value: ownerFilter,
+                  options: owners.map(owner => ({ value: owner, label: owner })),
+                  onChange: setOwnerFilter
+                },
+                {
+                  key: 'priority',
+                  label: 'Priority',
+                  value: priorityFilter,
+                  options: priorities.map(priority => ({ value: priority, label: priority })),
+                  onChange: setPriorityFilter
+                }
+              ]}
+              actions={[
+                { label: 'New Post', icon: Plus, onClick: () => {} },
+                { label: 'Upload Assets', icon: Upload, onClick: () => {}, variant: 'outline' }
+              ]}
+            />
 
-            {(filterOwner !== 'all' || filterPriority !== 'all') && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setFilterOwner('all');
-                  setFilterPriority('all');
-                }}
-              >
-                Clear Filters
-              </Button>
+            {viewMode === 'operate' ? (
+              <div className="space-y-6">
+                {/* Automation Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Card className="card-glow">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <Zap className="h-5 w-5 text-primary" />
+                        Final Report Automation
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Trigger final report automation for completed posts
+                      </p>
+                      <Button 
+                        size="sm" 
+                        disabled={selectedIds.length === 0}
+                        onClick={() => handleBulkAction('trigger_final_report')}
+                      >
+                        Trigger for {selectedIds.length}
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="card-glow">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <Calendar className="h-5 w-5 text-warning" />
+                        Due Today
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-warning mb-2">
+                        {posts.filter(p => {
+                          const today = new Date().toDateString();
+                          return new Date(p.dueDate).toDateString() === today;
+                        }).length}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Posts due today
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="card-glow">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-base">
+                        <AlertTriangle className="h-5 w-5 text-danger" />
+                        High Priority
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-danger mb-2">
+                        {posts.filter(p => p.priority === 'high' && p.status !== 'done').length}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        High priority pending
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <KanbanBoard
+                  columns={kanbanColumns}
+                  selectedIds={selectedIds}
+                  onSelectionChange={setSelectedIds}
+                  onItemClick={handleRecordClick}
+                  onStatusChange={handleStatusChange}
+                  service="ig"
+                />
+              </div>
+            ) : (
+              <DataTable
+                data={filteredPosts}
+                columns={tableColumns}
+                selectedIds={selectedIds}
+                onSelectionChange={setSelectedIds}
+                onItemClick={handleRecordClick}
+              />
             )}
           </div>
-        </CardContent>
-      </Card>
+        </SidebarInset>
+      </div>
 
-      {/* Bulk Actions */}
-      {selectedIds.length > 0 && (
-        <Card className="card bg-primary/10 border-primary/20">
-          <CardContent className="py-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">
-                {selectedIds.length} posts selected
-              </span>
-              <div className="flex items-center gap-2">
-                <Button size="sm">
-                  <User className="h-4 w-4 mr-1" />
-                  Assign Owner
-                </Button>
-                <Button size="sm" variant="outline">
-                  <Tag className="h-4 w-4 mr-1" />
-                  Set Priority
-                </Button>
-                <Button size="sm" variant="outline">
-                  <Calendar className="h-4 w-4 mr-1" />
-                  Set Due Date
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <BulkBar
+        selectedCount={selectedIds.length}
+        onClear={() => setSelectedIds([])}
+        onBulkAction={handleBulkAction}
+        service="ig"
+      />
 
-      {/* Content */}
-      {viewMode === 'board' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {columns.map((column) => {
-            const columnPosts = filteredPosts.filter(post => post.status === column.status);
-            
-            return (
-              <Card key={column.id} className="card">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{column.title}</CardTitle>
-                    <Badge variant="secondary" className="text-xs">
-                      {columnPosts.length}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {columnPosts.map((post) => (
-                    <div
-                      key={post.id}
-                      className="p-4 rounded-lg bg-surface hover:bg-surface-elevated transition-colors cursor-pointer"
-                      onClick={() => {
-                        if (selectedIds.includes(post.id)) {
-                          setSelectedIds(prev => prev.filter(id => id !== post.id));
-                        } else {
-                          setSelectedIds(prev => [...prev, post.id]);
-                        }
-                      }}
-                    >
-                      {/* Post Preview */}
-                      <div className="relative mb-3">
-                        <div className="aspect-square rounded-lg bg-surface-elevated overflow-hidden">
-                          {post.mediaUrl ? (
-                            <img
-                              src={post.mediaUrl}
-                              alt="Post preview"
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <Eye className="h-8 w-8 text-foreground-muted" />
-                            </div>
-                          )}
-                        </div>
-                        <div className="absolute top-2 right-2">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                                <MoreVertical className="h-3 w-3" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleStatusChange(post.id, 'in_progress')}>
-                                Move to In Progress
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleStatusChange(post.id, 'needs_qa')}>
-                                Move to Needs QA
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleStatusChange(post.id, 'done')}>
-                                Move to Done
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </div>
-
-                      {/* Post Content */}
-                      <p className="text-sm font-medium text-foreground mb-2 line-clamp-2">
-                        {post.caption}
-                      </p>
-
-                      {/* Post Meta */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Badge className={getPriorityColor(post.priority)}>
-                            {post.priority}
-                          </Badge>
-                          {post.dueDate && (
-                            <span className="text-xs text-foreground-muted">
-                              Due {new Date(post.dueDate).toLocaleDateString()}
-                            </span>
-                          )}
-                        </div>
-                        
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1 text-xs text-foreground-muted">
-                            <User className="h-3 w-3" />
-                            {post.owner}
-                          </div>
-                          
-                          {post.tags && post.tags.length > 0 && (
-                            <div className="flex items-center gap-1">
-                              <Tag className="h-3 w-3 text-foreground-muted" />
-                              <span className="text-xs text-foreground-muted">
-                                {post.tags.length}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      ) : (
-        <Card className="card">
-          <CardHeader>
-            <CardTitle>Posts Table View</CardTitle>
-            <CardDescription>
-              Detailed view of all Instagram posts
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {filteredPosts.map((post) => (
-                <div key={post.id} className="flex items-center gap-4 p-4 rounded-lg bg-surface hover:bg-surface-elevated transition-colors">
-                  <input
-                    type="checkbox"
-                    className="rounded border-border"
-                    checked={selectedIds.includes(post.id)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setSelectedIds(prev => [...prev, post.id]);
-                      } else {
-                        setSelectedIds(prev => prev.filter(id => id !== post.id));
-                      }
-                    }}
-                  />
-                  
-                  <div className="w-16 h-16 rounded-lg bg-surface-elevated overflow-hidden shrink-0">
-                    {post.mediaUrl ? (
-                      <img
-                        src={post.mediaUrl}
-                        alt="Post preview"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Eye className="h-6 w-6 text-foreground-muted" />
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-foreground mb-1 line-clamp-1">
-                      {post.caption}
-                    </p>
-                    <div className="flex items-center gap-3 text-sm text-foreground-muted">
-                      <span>{post.owner}</span>
-                      <span>•</span>
-                      <span>{new Date(post.createdAt).toLocaleDateString()}</span>
-                      {post.dueDate && (
-                        <>
-                          <span>•</span>
-                          <span>Due {new Date(post.dueDate).toLocaleDateString()}</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Badge className={getPriorityColor(post.priority)}>
-                      {post.priority}
-                    </Badge>
-                    <Badge className={getStatusColor(post.status)}>
-                      {post.status.replace('_', ' ')}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+      <RecordDrawer
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        record={selectedRecord}
+        service="ig"
+        onSave={handleRecordSave}
+      />
+    </SidebarProvider>
   );
 };
 
