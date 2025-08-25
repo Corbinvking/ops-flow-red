@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bell, Settings, User, ChevronDown } from 'lucide-react';
+import { Bell, Settings, User, ChevronDown, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -10,9 +10,15 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const TopBar: React.FC = () => {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+  };
 
   return (
     <header className="sticky top-0 z-50 glass border-b border-border">
@@ -44,7 +50,7 @@ export const TopBar: React.FC = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="gap-2">
                   <div className="h-6 w-6 rounded-full bg-gradient-primary" />
-                  <span className="text-sm">Admin</span>
+                  <span className="text-sm">{user?.name || 'User'}</span>
                   <ChevronDown className="h-3 w-3" />
                 </Button>
               </DropdownMenuTrigger>
@@ -58,7 +64,8 @@ export const TopBar: React.FC = () => {
                   Settings
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-danger focus:text-danger">
+                <DropdownMenuItem className="text-danger focus:text-danger" onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
                   Sign Out
                 </DropdownMenuItem>
               </DropdownMenuContent>
