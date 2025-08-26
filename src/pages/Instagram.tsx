@@ -18,7 +18,7 @@ import {
   User,
   AlertTriangle
 } from 'lucide-react';
-import { useIGData } from '@/hooks/useIGData';
+import { useAirtableData, AIRTABLE_TABLES } from '@/hooks/useAirtableData';
 
 type ViewMode = 'operate' | 'data';
 
@@ -32,13 +32,13 @@ const Instagram: React.FC = () => {
   const [ownerFilter, setOwnerFilter] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
 
-  const { posts, loading, updatePost, bulkUpdate } = useIGData(currentView);
+  const { data: posts, loading, updateRecord, error } = useAirtableData({ tableName: AIRTABLE_TABLES.INSTAGRAM });
 
   const filteredPosts = posts.filter(post => {
     const matchesSearch = !searchValue || 
-      post.caption.toLowerCase().includes(searchValue.toLowerCase());
-    const matchesOwner = !ownerFilter || post.owner === ownerFilter;
-    const matchesPriority = !priorityFilter || post.priority === priorityFilter;
+      post.fields['Caption']?.toLowerCase().includes(searchValue.toLowerCase());
+    const matchesOwner = !ownerFilter || post.fields['Owner'] === ownerFilter;
+    const matchesPriority = !priorityFilter || post.fields['Priority'] === priorityFilter;
     
     return matchesSearch && matchesOwner && matchesPriority;
   });
@@ -47,55 +47,75 @@ const Instagram: React.FC = () => {
     {
       id: 'backlog',
       title: 'Backlog',
-      items: filteredPosts.filter(p => p.status === 'backlog'),
+      items: filteredPosts.filter(p => p.fields['Status'] === 'backlog'),
       color: 'chip'
     },
     {
       id: 'in_progress',
       title: 'In Progress',
-      items: filteredPosts.filter(p => p.status === 'in_progress'),
+      items: filteredPosts.filter(p => p.fields['Status'] === 'in_progress'),
       color: 'chip-warning'
     },
     {
       id: 'needs_qa',
       title: 'Needs QA',
-      items: filteredPosts.filter(p => p.status === 'needs_qa'),
+      items: filteredPosts.filter(p => p.fields['Status'] === 'needs_qa'),
       color: 'chip-danger'
     },
     {
       id: 'done',
       title: 'Done',
-      items: filteredPosts.filter(p => p.status === 'done'),
+      items: filteredPosts.filter(p => p.fields['Status'] === 'done'),
       color: 'chip-success'
     }
   ];
 
   const tableColumns = [
     { 
-      key: 'caption', 
+      key: 'Caption', 
       label: 'Caption', 
       sortable: true,
-      render: (value: string) => (
+      render: (value: any, item: any) => (
         <div className="max-w-xs">
-          <p className="line-clamp-2 text-sm">{value}</p>
+          <p className="line-clamp-2 text-sm">{item.fields['Caption'] || '-'}</p>
         </div>
       )
     },
     { 
-      key: 'mediaUrl', 
+      key: 'Media URL', 
       label: 'Media', 
-      render: (value: string) => (
-        <img src={value} alt="Post" className="w-12 h-12 object-cover rounded" />
+      render: (value: any, item: any) => (
+        <img src={item.fields['Media URL']} alt="Post" className="w-12 h-12 object-cover rounded" />
       )
     },
-    { key: 'owner', label: 'Owner', sortable: true },
-    { key: 'status', label: 'Status', sortable: true },
-    { key: 'priority', label: 'Priority', sortable: true },
-    { key: 'dueDate', label: 'Due Date', sortable: true }
+    { 
+      key: 'Owner', 
+      label: 'Owner', 
+      sortable: true,
+      render: (value: any, item: any) => item.fields['Owner'] || '-'
+    },
+    { 
+      key: 'Status', 
+      label: 'Status', 
+      sortable: true,
+      render: (value: any, item: any) => item.fields['Status'] || '-'
+    },
+    { 
+      key: 'Priority', 
+      label: 'Priority', 
+      sortable: true,
+      render: (value: any, item: any) => item.fields['Priority'] || '-'
+    },
+    { 
+      key: 'Due Date', 
+      label: 'Due Date', 
+      sortable: true,
+      render: (value: any, item: any) => item.fields['Due Date'] || '-'
+    }
   ];
 
   const handleStatusChange = (itemId: string, newStatus: string) => {
-    updatePost(itemId, { status: newStatus as any });
+    updateRecord(itemId, { 'Status': newStatus });
   };
 
   const handleBulkAction = (action: string, value?: any) => {
@@ -103,17 +123,20 @@ const Instagram: React.FC = () => {
     
     switch (action) {
       case 'set_status':
-        updates.status = value;
+        updates['Status'] = value;
         break;
       case 'assign_owner':
-        updates.owner = value;
+        updates['Owner'] = value;
         break;
       case 'trigger_final_report':
-        updates.sendFinalReport = true;
+        updates['Send Final Report'] = true;
         break;
     }
 
-    bulkUpdate(selectedIds, updates);
+    // Update each selected record
+    selectedIds.forEach(id => {
+      updateRecord(id, updates);
+    });
     setSelectedIds([]);
   };
 
@@ -124,7 +147,7 @@ const Instagram: React.FC = () => {
 
   const handleRecordSave = (updates: any) => {
     if (selectedRecord) {
-      updatePost(selectedRecord.id, updates);
+      updateRecord(selectedRecord.id, updates);
     }
   };
 
@@ -132,15 +155,15 @@ const Instagram: React.FC = () => {
     viwBoard: posts.length,
     viwAllPosts: posts.length,
     viwDueSoon: posts.filter(p => {
-      const dueDate = new Date(p.dueDate);
+      const dueDate = new Date(p.fields['Due Date']);
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
       return dueDate <= tomorrow;
     }).length,
-    viwCompleted: posts.filter(p => p.status === 'done').length
+    viwCompleted: posts.filter(p => p.fields['Status'] === 'done').length
   };
 
-  const owners = [...new Set(posts.map(p => p.owner))];
+  const owners = [...new Set(posts.map(p => p.fields['Owner']).filter(Boolean))];
   const priorities = ['high', 'medium', 'low'];
 
   if (loading) {
@@ -237,12 +260,12 @@ const Instagram: React.FC = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold text-warning mb-2">
-                        {posts.filter(p => {
-                          const today = new Date().toDateString();
-                          return new Date(p.dueDate).toDateString() === today;
-                        }).length}
-                      </div>
+                                             <div className="text-2xl font-bold text-warning mb-2">
+                         {posts.filter(p => {
+                           const today = new Date().toDateString();
+                           return new Date(p.fields['Due Date']).toDateString() === today;
+                         }).length}
+                       </div>
                       <p className="text-sm text-muted-foreground">
                         Posts due today
                       </p>
@@ -257,9 +280,9 @@ const Instagram: React.FC = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="text-2xl font-bold text-danger mb-2">
-                        {posts.filter(p => p.priority === 'high' && p.status !== 'done').length}
-                      </div>
+                                             <div className="text-2xl font-bold text-danger mb-2">
+                         {posts.filter(p => p.fields['Priority'] === 'high' && p.fields['Status'] !== 'done').length}
+                       </div>
                       <p className="text-sm text-muted-foreground">
                         High priority pending
                       </p>

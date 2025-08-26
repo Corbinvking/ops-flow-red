@@ -4,38 +4,51 @@ export type Status = 'backlog' | 'in_progress' | 'needs_qa' | 'done' | 'failed' 
 export type Priority = 'low' | 'medium' | 'high' | 'urgent';
 export type Service = 'soundcloud' | 'youtube' | 'instagram' | 'spotify';
 
-// Campaign Management
-export interface Campaign {
+// Airtable Record Structure
+export interface AirtableRecord {
   id: string;
-  name: string;
-  service: Service;
-  owner: string;
-  status: Status;
-  startDate: string;
-  endDate: string;
-  progress: number;
-  lastUpdate: string;
-  trackUrl?: string;
-  targets?: {
-    reposts?: number;
-    likes?: number;
-    comments?: number;
-  };
-  notes?: string;
+  createdTime: string;
+  fields: Record<string, any>;
 }
 
-// Invoice System
-export interface Invoice {
-  id: string;
-  campaignId?: string;
-  amount: number;
-  currency: string;
-  status: 'request' | 'sent' | 'paid';
-  dueDate: string;
-  clientName: string;
-  description: string;
-  createdAt: string;
-  updatedAt: string;
+// Campaign Management (Airtable-based)
+export interface Campaign extends AirtableRecord {
+  fields: {
+    'Campaign'?: string;
+    'Name'?: string;
+    'Service Type'?: string;
+    'Service'?: string;
+    'Status'?: string;
+    'Start Date'?: string;
+    'End Date'?: string;
+    'Goal'?: number;
+    'Remaining'?: number;
+    'URL'?: string;
+    'Owner'?: string;
+    'Comments'?: string;
+    'Invoice'?: string;
+    'Sale Price'?: number;
+    'Paid R?'?: string;
+    'Clients'?: string[];
+    'Email'?: string[];
+    'Salespeople'?: string[];
+    [key: string]: any;
+  };
+}
+
+// Invoice System (Airtable-based)
+export interface Invoice extends AirtableRecord {
+  fields: {
+    'Name'?: string;
+    'Project Description'?: string;
+    'Status'?: string;
+    'Date'?: string;
+    'Invoice #'?: number;
+    'Amount'?: number;
+    'Open Balance'?: number;
+    'Attachment Summary'?: any;
+    [key: string]: any;
+  };
 }
 
 // Alert System
@@ -145,11 +158,50 @@ export interface User {
   name: string;
   email: string;
   avatar?: string;
-  role: 'admin' | 'operator' | 'viewer';
+  role: 'admin' | 'operator' | 'sales' | 'engineer' | 'viewer';
   preferences: {
     theme: 'dark' | 'light';
     notifications: boolean;
   };
+}
+
+// Database User (from RBAC system)
+export interface DBUser {
+  id: string;
+  email: string;
+  role: 'admin' | 'operator' | 'sales' | 'engineer' | 'viewer';
+  first_name?: string;
+  last_name?: string;
+  last_login?: string;
+  created_at: string;
+  updated_at?: string;
+}
+
+// User Management
+export interface CreateUserData {
+  email: string;
+  password: string;
+  role: 'admin' | 'operator' | 'sales' | 'engineer' | 'viewer';
+  first_name?: string;
+  last_name?: string;
+}
+
+export interface UpdateUserData {
+  email?: string;
+  role?: 'admin' | 'operator' | 'sales' | 'engineer' | 'viewer';
+  first_name?: string;
+  last_name?: string;
+}
+
+export interface UserPermission {
+  resource: string;
+  action: string;
+}
+
+export interface UserStats {
+  totalUsers: number;
+  usersByRole: Record<string, number>;
+  recentLogins: number;
 }
 
 export interface APIConnection {

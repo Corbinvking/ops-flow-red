@@ -30,52 +30,89 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { mockAPI } from '@/data/mockData';
+import { useCampaignData, useInvoiceData, useInvoiceRequestsData } from '@/hooks/useAirtableData';
 import { KPIData, Campaign, Invoice, Alert } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
 const Dashboard: React.FC = () => {
-  const [kpiData, setKpiData] = useState<KPIData | null>(null);
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  
+  // Use real Airtable data hooks
+  const { 
+    data: campaigns, 
+    loading: campaignsLoading, 
+    error: campaignsError,
+    updateRecord: updateCampaign 
+  } = useCampaignData();
+  
+  const { 
+    data: invoices, 
+    loading: invoicesLoading, 
+    error: invoicesError,
+    updateRecord: updateInvoice 
+  } = useInvoiceData();
+  
+  const { 
+    data: invoiceRequests, 
+    loading: requestsLoading, 
+    error: requestsError 
+  } = useInvoiceRequestsData();
 
-  useEffect(() => {
-    const loadDashboardData = async () => {
-      try {
-        const [kpiResult, campaignsResult, invoicesResult, alertsResult] = await Promise.all([
-          mockAPI.getKPIData(),
-          mockAPI.getCampaigns(),
-          mockAPI.getInvoices(),
-          mockAPI.getAlerts(),
-        ]);
+  // Mock alerts data (TODO: Replace with real alerts from Airtable)
+  const alerts = [
+    {
+      id: '1',
+      title: 'Campaign Completed',
+      message: 'YouTube campaign "Summer Hits 2025" has been completed',
+      severity: 'success',
+      timestamp: new Date().toISOString()
+    },
+    {
+      id: '2',
+      title: 'Invoice Overdue',
+      message: 'Invoice #INV-2025-001 is 5 days overdue',
+      severity: 'warning',
+      timestamp: new Date(Date.now() - 3600000).toISOString()
+    },
+    {
+      id: '3',
+      title: 'New Campaign Request',
+      message: 'New Instagram seeding campaign requested by Client XYZ',
+      severity: 'info',
+      timestamp: new Date(Date.now() - 7200000).toISOString()
+    }
+  ];
 
-        setKpiData(kpiResult);
-        setCampaigns(campaignsResult);
-        setInvoices(invoicesResult);
-        setAlerts(alertsResult);
-      } catch (error) {
-        toast({
-          title: 'Error loading dashboard',
-          description: 'Failed to load dashboard data. Please try again.',
-          variant: 'destructive',
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Calculate KPI data from real data
+  const kpiData: KPIData = {
+    activeCampaigns: campaigns?.filter(c => c.fields?.['Status'] === 'In Progress').length || 0,
+    igInQueue: campaigns?.filter(c => {
+      const serviceType = c.fields?.['Service Type']?.toLowerCase() || '';
+      return serviceType.includes('instagram') && c.fields?.['Status'] === 'Pending';
+    }).length || 0,
+    spInQueue: campaigns?.filter(c => {
+      const serviceType = c.fields?.['Service Type']?.toLowerCase() || '';
+      return serviceType.includes('spotify') && c.fields?.['Status'] === 'Pending';
+    }).length || 0,
+    ytVideosAudited: campaigns?.filter(c => {
+      const serviceType = c.fields?.['Service Type']?.toLowerCase() || '';
+      return serviceType.includes('youtube') && c.fields?.['Status'] === 'Complete';
+    }).length || 0,
+    scQueueSize: campaigns?.filter(c => {
+      const serviceType = c.fields?.['Service Type']?.toLowerCase() || '';
+      return serviceType.includes('soundcloud') && c.fields?.['Status'] === 'Pending';
+    }).length || 0,
+    invoicesRequest: invoiceRequests?.length || 0,
+    invoicesSent: invoices?.filter(i => i.fields?.['Status'] === 'Sent').length || 0,
+    invoicesPaid: invoices?.filter(i => i.fields?.['Status'] === 'Paid').length || 0,
+    alertsCount: alerts.length,
+  };
 
-    loadDashboardData();
-  }, [toast]);
+  const loading = campaignsLoading || invoicesLoading || requestsLoading;
 
-  const handleInvoiceDrop = async (invoiceId: string, newStatus: Invoice['status']) => {
+  const handleInvoiceDrop = async (invoiceId: string, newStatus: string) => {
     try {
-      await mockAPI.updateInvoiceStatus(invoiceId, newStatus);
-      setInvoices(prev => prev.map(inv => 
-        inv.id === invoiceId ? { ...inv, status: newStatus } : inv
-      ));
+      await updateInvoice(invoiceId, { 'Status': newStatus });
       toast({
         title: 'Invoice updated',
         description: `Invoice moved to ${newStatus}`,
@@ -200,38 +237,63 @@ const Dashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {campaigns.map((campaign) => (
-                <div key={campaign.id} className="flex items-center gap-4 p-4 rounded-lg bg-surface hover:bg-surface-elevated transition-colors cursor-pointer">
-                  <div className="p-2 rounded-lg bg-primary/10">
-                    {campaign.service === 'soundcloud' && <Cloud className="h-4 w-4 text-primary" />}
-                    {campaign.service === 'spotify' && <Music className="h-4 w-4 text-primary" />}
-                    {campaign.service === 'youtube' && <Youtube className="h-4 w-4 text-primary" />}
-                    {campaign.service === 'instagram' && <Instagram className="h-4 w-4 text-primary" />}
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-medium text-foreground truncate">{campaign.name}</h4>
-                      <Badge
-                        variant={campaign.status === 'in_progress' ? 'default' : 
-                                campaign.status === 'needs_qa' ? 'destructive' : 'secondary'}
-                        className="shrink-0"
-                      >
-                        {campaign.status.replace('_', ' ')}
-                      </Badge>
+              {campaigns.map((campaign) => {
+                // Handle Airtable data structure
+                const fields = campaign.fields || {};
+                const campaignName = fields['Campaign'] || fields['Name'] || 'Unnamed Campaign';
+                const status = fields['Status'] || 'Unknown';
+                const serviceType = fields['Service Type'] || fields['Service'] || 'Unknown';
+                const goal = fields['Goal'] || 0;
+                const remaining = fields['Remaining'] || 0;
+                const startDate = fields['Start Date'] || new Date().toISOString();
+                const progress = goal > 0 ? Math.round(((goal - remaining) / goal) * 100) : 0;
+                
+                // Determine service icon
+                const getServiceIcon = (service) => {
+                  const serviceLower = service?.toLowerCase() || '';
+                  if (serviceLower.includes('soundcloud')) return 'soundcloud';
+                  if (serviceLower.includes('spotify')) return 'spotify';
+                  if (serviceLower.includes('youtube') || serviceLower.includes('ww display')) return 'youtube';
+                  if (serviceLower.includes('instagram')) return 'instagram';
+                  return 'unknown';
+                };
+                
+                const service = getServiceIcon(serviceType);
+                
+                return (
+                  <div key={campaign.id} className="flex items-center gap-4 p-4 rounded-lg bg-surface hover:bg-surface-elevated transition-colors cursor-pointer">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      {service === 'soundcloud' && <Cloud className="h-4 w-4 text-primary" />}
+                      {service === 'spotify' && <Music className="h-4 w-4 text-primary" />}
+                      {service === 'youtube' && <Youtube className="h-4 w-4 text-primary" />}
+                      {service === 'instagram' && <Instagram className="h-4 w-4 text-primary" />}
+                      {service === 'unknown' && <Music className="h-4 w-4 text-primary" />}
                     </div>
-                    <p className="text-sm text-foreground-muted mb-2">{campaign.owner}</p>
-                    <Progress value={campaign.progress} className="h-2" />
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="font-medium text-foreground truncate">{campaignName}</h4>
+                        <Badge
+                          variant={status === 'Complete' ? 'default' : 
+                                  status === 'In Progress' ? 'secondary' : 'destructive'}
+                          className="shrink-0"
+                        >
+                          {status}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-foreground-muted mb-2">{serviceType}</p>
+                      <Progress value={progress} className="h-2" />
+                    </div>
+                    
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-medium text-foreground">{progress}%</p>
+                      <p className="text-xs text-foreground-muted">
+                        Goal: ${goal.toLocaleString()}
+                      </p>
+                    </div>
                   </div>
-                  
-                  <div className="text-right shrink-0">
-                    <p className="text-sm font-medium text-foreground">{campaign.progress}%</p>
-                    <p className="text-xs text-foreground-muted">
-                      Due {new Date(campaign.endDate).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>
@@ -246,12 +308,15 @@ const Dashboard: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {['request', 'sent', 'paid'].map(status => {
-                  const statusInvoices = invoices.filter(inv => inv.status === status);
+                {['Paid', 'Sent', 'Draft'].map(status => {
+                  const statusInvoices = invoices.filter(inv => {
+                    const fields = inv.fields || {};
+                    return fields['Status'] === status;
+                  });
                   const statusColors = {
-                    request: 'border-warning/20 bg-warning/5',
-                    sent: 'border-primary/20 bg-primary/5',
-                    paid: 'border-success/20 bg-success/5'
+                    'Paid': 'border-success/20 bg-success/5',
+                    'Sent': 'border-primary/20 bg-primary/5',
+                    'Draft': 'border-warning/20 bg-warning/5'
                   };
                   
                   return (
@@ -261,12 +326,15 @@ const Dashboard: React.FC = () => {
                         <span className="text-xs opacity-60">{statusInvoices.length}</span>
                       </h5>
                       <div className="space-y-2">
-                        {statusInvoices.slice(0, 2).map(invoice => (
-                          <div key={invoice.id} className="p-2 rounded bg-surface hover:bg-surface-elevated transition-colors cursor-move">
-                            <p className="text-sm font-medium">{invoice.clientName}</p>
-                            <p className="text-xs text-foreground-muted">${invoice.amount.toLocaleString()}</p>
-                          </div>
-                        ))}
+                        {statusInvoices.slice(0, 2).map(invoice => {
+                          const fields = invoice.fields || {};
+                          return (
+                            <div key={invoice.id} className="p-2 rounded bg-surface hover:bg-surface-elevated transition-colors cursor-move">
+                              <p className="text-sm font-medium">{fields['Name'] || 'Unnamed Invoice'}</p>
+                              <p className="text-xs text-foreground-muted">${(fields['Amount'] || 0).toLocaleString()}</p>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   );

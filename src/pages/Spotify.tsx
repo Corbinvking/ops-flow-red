@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Grid, List, Filter, Calendar, User, Mail, Phone, MoreVertical, Music } from 'lucide-react';
+import { Plus, Grid, List, Filter, Calendar, User, Mail, Phone, MoreVertical, Music, Target } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,37 +16,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { mockAPI } from '@/data/mockData';
-import { SPItem } from '@/types';
+import { useAirtableData, AIRTABLE_TABLES } from '@/hooks/useAirtableData';
 import { useToast } from '@/hooks/use-toast';
 
 const Spotify: React.FC = () => {
-  const [items, setItems] = useState<SPItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'board' | 'table'>('board');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [filterOwner, setFilterOwner] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const { toast } = useToast();
-
-  useEffect(() => {
-    const loadItems = async () => {
-      try {
-        const itemsResult = await mockAPI.getSpotifyItems();
-        setItems(itemsResult);
-      } catch (error) {
-        toast({
-          title: 'Error loading data',
-          description: 'Failed to load Spotify data. Please try again.',
-          variant: 'destructive',
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadItems();
-  }, [toast]);
+  
+  const { data: items, loading, updateRecord, error } = useAirtableData({ tableName: AIRTABLE_TABLES.SPOTIFY });
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -68,17 +48,15 @@ const Spotify: React.FC = () => {
   ];
 
   const filteredItems = items.filter(item => {
-    if (filterOwner !== 'all' && item.owner !== filterOwner) return false;
-    if (filterStatus !== 'all' && item.status !== filterStatus) return false;
+    if (filterOwner !== 'all' && item.fields['Owner'] !== filterOwner) return false;
+    if (filterStatus !== 'all' && item.fields['Status'] !== filterStatus) return false;
     return true;
   });
 
-  const owners = [...new Set(items.map(item => item.owner))];
+  const owners = [...new Set(items.map(item => item.fields['Owner']).filter(Boolean))];
 
   const handleStatusChange = (itemId: string, newStatus: string) => {
-    setItems(prev => prev.map(item => 
-      item.id === itemId ? { ...item, status: newStatus as any } : item
-    ));
+    updateRecord(itemId, { 'Status': newStatus });
     toast({
       title: 'Status updated',
       description: `Item moved to ${newStatus}`,
@@ -202,7 +180,7 @@ const Spotify: React.FC = () => {
       {viewMode === 'board' ? (
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
           {columns.map((column) => {
-            const columnItems = filteredItems.filter(item => item.status === column.status);
+                         const columnItems = filteredItems.filter(item => item.fields['Status'] === column.status);
             
             return (
               <Card key={column.id} className="card">
@@ -227,16 +205,16 @@ const Spotify: React.FC = () => {
                         }
                       }}
                     >
-                      {/* Artist/Track Info */}
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="min-w-0 flex-1">
-                          <h4 className="font-medium text-foreground text-sm line-clamp-1">
-                            {item.artistName}
-                          </h4>
-                          <p className="text-xs text-foreground-muted line-clamp-1 mt-1">
-                            {item.trackName}
-                          </p>
-                        </div>
+                                             {/* Artist/Track Info */}
+                       <div className="flex items-start justify-between mb-2">
+                         <div className="min-w-0 flex-1">
+                           <h4 className="font-medium text-foreground text-sm line-clamp-1">
+                             {item.fields['Campaign'] || '-'}
+                           </h4>
+                           <p className="text-xs text-foreground-muted line-clamp-1 mt-1">
+                             {item.fields['Client'] || '-'}
+                           </p>
+                         </div>
                         
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -261,41 +239,41 @@ const Spotify: React.FC = () => {
                         </DropdownMenu>
                       </div>
 
-                      {/* Contact Info */}
-                      {(item.contactEmail || item.contactPhone) && (
-                        <div className="space-y-1 mb-3">
-                          {item.contactEmail && (
-                            <div className="flex items-center gap-1 text-xs text-foreground-muted">
-                              <Mail className="h-3 w-3" />
-                              <span className="truncate">{item.contactEmail}</span>
-                            </div>
-                          )}
-                          {item.contactPhone && (
-                            <div className="flex items-center gap-1 text-xs text-foreground-muted">
-                              <Phone className="h-3 w-3" />
-                              <span>{item.contactPhone}</span>
-                            </div>
-                          )}
-                        </div>
-                      )}
+                                             {/* Contact Info */}
+                       {(item.fields['Client'] || item.fields['Goal']) && (
+                         <div className="space-y-1 mb-3">
+                           {item.fields['Client'] && (
+                             <div className="flex items-center gap-1 text-xs text-foreground-muted">
+                               <User className="h-3 w-3" />
+                               <span className="truncate">{item.fields['Client']}</span>
+                             </div>
+                           )}
+                           {item.fields['Goal'] && (
+                             <div className="flex items-center gap-1 text-xs text-foreground-muted">
+                               <Target className="h-3 w-3" />
+                               <span>Goal: {item.fields['Goal'].toLocaleString()}</span>
+                             </div>
+                           )}
+                         </div>
+                       )}
 
                       {/* Meta Info */}
                       <div className="space-y-2">
                         <div className="flex items-center justify-between text-xs">
                           <div className="flex items-center gap-1 text-foreground-muted">
                             <User className="h-3 w-3" />
-                            {item.owner}
+                            {item.fields['Owner'] || '-'}
                           </div>
-                          {item.eta && (
+                          {item.fields['ETA'] && (
                             <span className="text-foreground-muted">
-                              ETA: {new Date(item.eta).toLocaleDateString()}
+                              ETA: {new Date(item.fields['ETA']).toLocaleDateString()}
                             </span>
                           )}
                         </div>
                         
-                        {item.notes && (
+                        {item.fields['Notes'] && (
                           <p className="text-xs text-foreground-muted line-clamp-2 p-2 bg-surface-elevated rounded">
-                            {item.notes}
+                            {item.fields['Notes']}
                           </p>
                         )}
                       </div>
@@ -336,31 +314,31 @@ const Spotify: React.FC = () => {
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between mb-1">
-                      <div>
-                        <h4 className="font-medium text-foreground">{item.artistName}</h4>
-                        <p className="text-sm text-foreground-muted">{item.trackName}</p>
-                      </div>
-                      <Badge className={getStatusColor(item.status)}>
-                        {item.status}
+                                         <div className="flex items-start justify-between mb-1">
+                       <div>
+                         <h4 className="font-medium text-foreground">{item.fields['Campaign'] || '-'}</h4>
+                         <p className="text-sm text-foreground-muted">{item.fields['Client'] || '-'}</p>
+                       </div>
+                      <Badge className={getStatusColor(item.fields['Status'] || 'sourcing')}>
+                        {item.fields['Status'] || 'sourcing'}
                       </Badge>
                     </div>
                     
-                    <div className="flex items-center gap-4 text-sm text-foreground-muted mt-2">
-                      <span>{item.owner}</span>
-                      {item.contactEmail && (
-                        <>
-                          <span>•</span>
-                          <span>{item.contactEmail}</span>
-                        </>
-                      )}
-                      {item.eta && (
-                        <>
-                          <span>•</span>
-                          <span>ETA: {new Date(item.eta).toLocaleDateString()}</span>
-                        </>
-                      )}
-                    </div>
+                                         <div className="flex items-center gap-4 text-sm text-foreground-muted mt-2">
+                       <span>{item.fields['Owner'] || '-'}</span>
+                       {item.fields['Goal'] && (
+                         <>
+                           <span>•</span>
+                           <span>Goal: {item.fields['Goal'].toLocaleString()}</span>
+                         </>
+                       )}
+                       {item.fields['Status'] && (
+                         <>
+                           <span>•</span>
+                           <span>Status: {item.fields['Status']}</span>
+                         </>
+                       )}
+                     </div>
                   </div>
                 </div>
               ))}

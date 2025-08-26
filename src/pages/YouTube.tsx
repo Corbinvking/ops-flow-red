@@ -13,36 +13,16 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { mockAPI } from '@/data/mockData';
-import { YTVideo } from '@/types';
+import { useAirtableData, AIRTABLE_TABLES } from '@/hooks/useAirtableData';
 import { useToast } from '@/hooks/use-toast';
 
 const YouTube: React.FC = () => {
-  const [videos, setVideos] = useState<YTVideo[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [importUrls, setImportUrls] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
-
-  useEffect(() => {
-    const loadVideos = async () => {
-      try {
-        const videosResult = await mockAPI.getYTVideos();
-        setVideos(videosResult);
-      } catch (error) {
-        toast({
-          title: 'Error loading videos',
-          description: 'Failed to load YouTube data. Please try again.',
-          variant: 'destructive',
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadVideos();
-  }, [toast]);
+  
+  const { data: videos, loading, error } = useAirtableData({ tableName: AIRTABLE_TABLES.YOUTUBE });
 
   const handleImport = () => {
     if (!importUrls.trim()) {
@@ -87,8 +67,8 @@ const YouTube: React.FC = () => {
   };
 
   const filteredVideos = videos.filter(video => 
-    video.url.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    video.notes.toLowerCase().includes(searchQuery.toLowerCase())
+    video.fields['URL']?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    video.fields['Notes']?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -251,34 +231,34 @@ const YouTube: React.FC = () => {
                   <TableCell>
                     <div className="max-w-xs">
                       <p className="font-medium text-foreground truncate">
-                        {video.url.split('v=')[1]?.substring(0, 11) || 'Video'}
+                        {video.fields['URL']?.split('v=')[1]?.substring(0, 11) || 'Video'}
                       </p>
                       <p className="text-sm text-foreground-muted truncate">
-                        {video.notes}
+                        {video.fields['Notes'] || '-'}
                       </p>
                     </div>
                   </TableCell>
                   <TableCell className="font-mono text-foreground">
-                    {video.views.toLocaleString()}
+                    {video.fields['Views']?.toLocaleString() || '0'}
                   </TableCell>
                   <TableCell className="font-mono text-foreground">
-                    {video.likes.toLocaleString()}
+                    {video.fields['Likes']?.toLocaleString() || '0'}
                   </TableCell>
                   <TableCell className="font-mono text-foreground">
-                    {video.comments.toLocaleString()}
+                    {video.fields['Comments']?.toLocaleString() || '0'}
                   </TableCell>
                   <TableCell>
-                    <span className={`font-bold ${getScoreColor(video.score)}`}>
-                      {video.score}/10
+                    <span className={`font-bold ${getScoreColor(video.fields['Score'] || 0)}`}>
+                      {video.fields['Score'] || 0}/10
                     </span>
                   </TableCell>
                   <TableCell>
-                    <Badge className={getActionColor(video.recommendedAction)}>
-                      {video.recommendedAction.replace('_', ' ')}
+                    <Badge className={getActionColor(video.fields['Recommended Action'] || 'maintain')}>
+                      {(video.fields['Recommended Action'] || 'maintain').replace('_', ' ')}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {video.fixed ? (
+                    {video.fields['Fixed'] ? (
                       <Badge className="chip-success">
                         <CheckCircle className="h-3 w-3 mr-1" />
                         Fixed

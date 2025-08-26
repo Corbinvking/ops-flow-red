@@ -18,7 +18,7 @@ import {
   Target,
   Zap
 } from 'lucide-react';
-import { useSCData } from '@/hooks/useSCData';
+import { useAirtableData, AIRTABLE_TABLES } from '@/hooks/useAirtableData';
 import { getStatusColor } from '@/lib/ops';
 
 type ViewMode = 'operate' | 'data';
@@ -33,15 +33,15 @@ const SoundCloud: React.FC = () => {
   const [ownerFilter, setOwnerFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
 
-  const { campaigns, loading, updateCampaign, bulkUpdate } = useSCData(currentView);
+  const { data: campaigns, loading, updateRecord, error } = useAirtableData({ tableName: AIRTABLE_TABLES.SOUNDCLOUD });
 
   // Filter campaigns based on search and filters
   const filteredCampaigns = campaigns.filter(campaign => {
     const matchesSearch = !searchValue || 
-      campaign.trackInfo.toLowerCase().includes(searchValue.toLowerCase()) ||
-      campaign.client.toLowerCase().includes(searchValue.toLowerCase());
-    const matchesOwner = !ownerFilter || campaign.owner === ownerFilter;
-    const matchesStatus = !statusFilter || campaign.status === statusFilter;
+      campaign.fields['Track Info']?.toLowerCase().includes(searchValue.toLowerCase()) ||
+      campaign.fields['Client']?.toLowerCase().includes(searchValue.toLowerCase());
+    const matchesOwner = !ownerFilter || campaign.fields['Owner'] === ownerFilter;
+    const matchesStatus = !statusFilter || campaign.fields['Status'] === statusFilter;
     
     return matchesSearch && matchesOwner && matchesStatus;
   });
@@ -51,43 +51,83 @@ const SoundCloud: React.FC = () => {
     {
       id: 'active',
       title: 'Active',
-      items: filteredCampaigns.filter(c => c.status === 'active'),
+      items: filteredCampaigns.filter(c => c.fields['Status'] === 'active'),
       color: 'chip-success'
     },
     {
       id: 'in_progress',
       title: 'In Progress',
-      items: filteredCampaigns.filter(c => c.status === 'in_progress'),
+      items: filteredCampaigns.filter(c => c.fields['Status'] === 'in_progress'),
       color: 'chip-warning'
     },
     {
       id: 'complete',
       title: 'Complete',
-      items: filteredCampaigns.filter(c => c.status === 'complete'),
+      items: filteredCampaigns.filter(c => c.fields['Status'] === 'complete'),
       color: 'chip-success'
     },
     {
       id: 'cancelled',
       title: 'Cancelled',
-      items: filteredCampaigns.filter(c => c.status === 'cancelled'),
+      items: filteredCampaigns.filter(c => c.fields['Status'] === 'cancelled'),
       color: 'chip-danger'
     }
   ];
 
   // Table columns for data mode
   const tableColumns = [
-    { key: 'trackInfo', label: 'Track Info', sortable: true },
-    { key: 'client', label: 'Client', sortable: true },
-    { key: 'service', label: 'Service', sortable: true },
-    { key: 'goal', label: 'Goal', sortable: true },
-    { key: 'remaining', label: 'Remaining', sortable: true },
-    { key: 'status', label: 'Status', sortable: true },
-    { key: 'owner', label: 'Owner', sortable: true },
-    { key: 'startDate', label: 'Start Date', sortable: true }
+    { 
+      key: 'Track Info', 
+      label: 'Track Info', 
+      sortable: true,
+      render: (value: any, item: any) => item.fields['Track Info'] || '-'
+    },
+    { 
+      key: 'Client', 
+      label: 'Client', 
+      sortable: true,
+      render: (value: any, item: any) => item.fields['Client'] || '-'
+    },
+    { 
+      key: 'Service', 
+      label: 'Service', 
+      sortable: true,
+      render: (value: any, item: any) => item.fields['Service'] || '-'
+    },
+    { 
+      key: 'Goal', 
+      label: 'Goal', 
+      sortable: true,
+      render: (value: any, item: any) => item.fields['Goal'] || '-'
+    },
+    { 
+      key: 'Remaining', 
+      label: 'Remaining', 
+      sortable: true,
+      render: (value: any, item: any) => item.fields['Remaining'] || '-'
+    },
+    { 
+      key: 'Status', 
+      label: 'Status', 
+      sortable: true,
+      render: (value: any, item: any) => item.fields['Status'] || '-'
+    },
+    { 
+      key: 'Owner', 
+      label: 'Owner', 
+      sortable: true,
+      render: (value: any, item: any) => item.fields['Owner'] || '-'
+    },
+    { 
+      key: 'Start Date', 
+      label: 'Start Date', 
+      sortable: true,
+      render: (value: any, item: any) => item.fields['Start Date'] || '-'
+    }
   ];
 
   const handleStatusChange = (itemId: string, newStatus: string) => {
-    updateCampaign(itemId, { status: newStatus });
+    updateRecord(itemId, { 'Status': newStatus });
   };
 
   const handleBulkAction = (action: string, value?: any) => {
@@ -95,21 +135,24 @@ const SoundCloud: React.FC = () => {
     
     switch (action) {
       case 'set_status':
-        updates.status = value;
+        updates['Status'] = value;
         break;
       case 'assign_owner':
-        updates.owner = value;
+        updates['Owner'] = value;
         break;
       case 'set_start_today':
-        updates.startDate = new Date().toISOString().split('T')[0];
+        updates['Start Date'] = new Date().toISOString().split('T')[0];
         break;
       case 'request_receipt':
-        updates.receipts = 'requested';
-        updates.notes = 'Receipt requested on ' + new Date().toLocaleDateString();
+        updates['Receipts'] = 'requested';
+        updates['Notes'] = 'Receipt requested on ' + new Date().toLocaleDateString();
         break;
     }
 
-    bulkUpdate(selectedIds, updates);
+    // Update each selected record
+    selectedIds.forEach(id => {
+      updateRecord(id, updates);
+    });
     setSelectedIds([]);
   };
 
@@ -120,20 +163,20 @@ const SoundCloud: React.FC = () => {
 
   const handleRecordSave = (updates: any) => {
     if (selectedRecord) {
-      updateCampaign(selectedRecord.id, updates);
+      updateRecord(selectedRecord.id, updates);
     }
   };
 
   // View counts for sidebar
   const viewCounts = {
-    viwActiveCampaigns: campaigns.filter(c => c.status === 'active').length,
-    viwUpcoming: campaigns.filter(c => !c.startDate || new Date(c.startDate) > new Date()).length,
-    viwNoReceipt: campaigns.filter(c => c.receipts === 'pending').length,
+    viwActiveCampaigns: campaigns.filter(c => c.fields['Status'] === 'active').length,
+    viwUpcoming: campaigns.filter(c => !c.fields['Start Date'] || new Date(c.fields['Start Date']) > new Date()).length,
+    viwNoReceipt: campaigns.filter(c => c.fields['Receipts'] === 'pending').length,
     viwAllCampaigns: campaigns.length
   };
 
-  const owners = [...new Set(campaigns.map(c => c.owner))];
-  const statuses = [...new Set(campaigns.map(c => c.status))];
+  const owners = [...new Set(campaigns.map(c => c.fields['Owner']).filter(Boolean))];
+  const statuses = [...new Set(campaigns.map(c => c.fields['Status']).filter(Boolean))];
 
   if (loading) {
     return (

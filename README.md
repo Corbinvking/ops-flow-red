@@ -1,252 +1,290 @@
-# UnifiedOps Dashboard
+# 🎯 Ops Flow Red - Operations Dashboard
 
-A production-ready **React + Vite + TypeScript** application styled with **TailwindCSS** and **shadcn/ui** components that presents a unified operator dashboard for managing multi-platform music promotion campaigns.
-
-## 🎯 Overview
-
-UnifiedOps is a comprehensive dashboard for managing music promotion operations across SoundCloud, YouTube, Instagram, and Spotify. This is a **Tier-1 MVP** with all data flows mocked using local state and fixtures, designed to be easily integrated with real APIs (Airtable/Supabase) later.
+A modern React-based operations dashboard for managing campaigns, invoices, and business operations with real-time Airtable integration.
 
 ## 🚀 Features
 
-### Dashboard Pages
-- **Dashboard** - KPI overview, active campaigns, invoice pipeline, and alerts
-- **SoundCloud** - Campaign management and automation queue
-- **YouTube** - Video ratio analysis and optimization recommendations  
-- **Instagram** - Content pipeline with Kanban board and table views
-- **Spotify** - Artist outreach and playlist placement tracking
-- **Visualizer** - Lead generation for visual content services
-- **Settings** - Profile management, API keys, and data source configuration
+- **Real-time Dashboard**: Live KPI monitoring and campaign tracking
+- **Multi-platform Operations**: SoundCloud, YouTube, Instagram, Spotify management
+- **Airtable Integration**: Direct read/write access to 14+ business tables
+- **Role-based Access Control**: Secure authentication with user roles
+- **Responsive Design**: Mobile-friendly interface with dark theme
+- **Real-time Updates**: Live data synchronization with Airtable
 
-### Core Components
-- **KPI Cards** - Metrics with trend indicators and status variants
-- **Data Tables** - Sortable, filterable tables with bulk actions
-- **Kanban Boards** - Drag-and-drop workflow management
-- **Forms & Drawers** - Create/edit flows with validation
-- **Responsive Design** - Mobile-friendly with dark theme
-
-### Design System
-- **Bold red/black aesthetic** with high contrast typography
-- **Custom CSS variables** for consistent theming
-- **Inter** for body text, **Space Grotesk** for headings
-- **Semantic color tokens** - no hardcoded colors in components
-- **Smooth animations** and hover states
-
-## 🛠 Tech Stack
-
-- **React 18** with TypeScript
-- **Vite** for fast development and building  
-- **TailwindCSS** for styling
-- **shadcn/ui** for component library
-- **React Router** for navigation
-- **React Query** for state management
-- **Lucide React** for icons
-- **React Hook Form + Zod** for forms
-
-## 📁 Project Structure
+## 🏗️ Architecture
 
 ```
-src/
-├── components/
-│   ├── layout/           # AppLayout, TopBar, Navigation
-│   └── ui/              # shadcn/ui components + KPICard
-├── data/
-│   └── mockData.ts      # Mock API functions and fixtures
-├── hooks/
-│   └── use-toast.ts     # Toast notifications
-├── pages/               # Route components
-│   ├── Dashboard.tsx
-│   ├── SoundCloud.tsx
-│   ├── YouTube.tsx
-│   ├── Instagram.tsx
-│   ├── Spotify.tsx
-│   ├── Visualizer.tsx
-│   ├── Settings.tsx
-│   └── NotFound.tsx
-├── types/
-│   └── index.ts         # TypeScript type definitions
-└── lib/
-    └── utils.ts         # Utility functions
+Frontend (React + Vite) ←→ Backend APIs ←→ Airtable + PostgreSQL
+     ↓                           ↓
+  Vercel (CDN)              DigitalOcean (Docker)
 ```
 
-## 🚦 Getting Started
+### **Backend Services**
+- **RBAC API** (Port 3000): Authentication & user management
+- **Airtable API** (Port 3001): Business data operations
+- **PostgreSQL**: Data mirroring and caching
+- **Redis**: Session management and caching
 
-### Prerequisites
-- Node.js 18+ 
-- npm or yarn
+## 🛠️ Development Setup
 
-### Installation
+### **Prerequisites**
+- Node.js 18+ and npm
+- Git
+- Backend servers running (see backend setup)
 
-1. **Clone the repository**
+### **Quick Start**
+
+1. **Clone and Setup**
    ```bash
-   git clone <repository-url>
-   cd unified-ops-dashboard
+   git clone <your-repo-url>
+   cd ops-flow-red
+   npm run setup
    ```
 
-2. **Install dependencies**
+2. **Configure Environment**
    ```bash
-   npm install
+   # Copy environment template
+   cp env.example .env.local
+   
+   # Edit .env.local with your API endpoints
+   VITE_API_BASE_URL=http://localhost:3000
+   VITE_AIRTABLE_API_BASE_URL=http://localhost:3001
    ```
 
-3. **Start development server**
+3. **Start Development Server**
    ```bash
    npm run dev
    ```
 
-4. **Open in browser**
-   ```
-   http://localhost:8080
-   ```
+4. **Access the Application**
+   - Frontend: http://localhost:5173
+   - Backend APIs: http://localhost:3000, http://localhost:3001
 
-### Available Scripts
+### **Backend Connection**
+
+Ensure your backend services are running:
 
 ```bash
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run preview      # Preview production build
-npm run lint         # Run ESLint
-npm run type-check   # Run TypeScript checks
+# Terminal 1: RBAC API
+cd ../backend
+npm start  # Runs on port 3000
+
+# Terminal 2: Airtable API  
+cd ../backend
+node airtable-api-server.js  # Runs on port 3001
 ```
 
-## 🔄 API Integration Guide
+## 🔗 API Integration
 
-The application is designed to easily swap mock data with real APIs. All data access goes through the `mockAPI` object in `/src/data/mockData.ts`.
-
-### Replacing Mock APIs
-
-1. **Create API client**
-   ```typescript
-   // src/services/api.ts
-   export const api = {
-     campaigns: {
-       list: () => fetch('/api/campaigns').then(r => r.json()),
-       create: (data) => fetch('/api/campaigns', { method: 'POST', body: JSON.stringify(data) }),
-       // ... other methods
-     }
-   }
-   ```
-
-2. **Update data hooks**
-   ```typescript
-   // Replace mockAPI calls with real API
-   - const campaigns = await mockAPI.getCampaigns()
-   + const campaigns = await api.campaigns.list()
-   ```
-
-3. **Add environment variables**
-   ```bash
-   # .env
-   VITE_API_BASE_URL=https://your-api.com
-   VITE_AIRTABLE_TOKEN=your-token
-   VITE_SUPABASE_URL=your-supabase-url
-   ```
-
-### Integration Points
-- **Airtable** - Campaigns, invoices, leads
-- **Supabase** - Real-time updates, user management  
-- **Platform APIs** - SoundCloud, YouTube, Instagram, Spotify
-- **Analytics** - Google Analytics, custom events
-
-## 🎨 Design System
-
-### Color Palette
-```css
---background: #0B0B0F      /* Near-black background */
---surface: #141416         /* Card backgrounds */  
---primary: #FF2E4C         /* Hot red primary */
---primary-hover: #FF556E   /* Coral accent */
---success: #1DB954         /* Spotify green */
---warning: #F5A524         /* Amber warning */
---danger: #FF4D4F          /* Red danger */
-```
-
-### Typography
-- **Headings**: Space Grotesk (bold, confident)
-- **Body**: Inter (clean, readable)
-- **Code**: JetBrains Mono
-
-### Component Variants
+### **Authentication Flow**
 ```typescript
-// Example: Button variants in design system
-<Button variant="default">     // Standard button
-<Button variant="outline">     // Outlined button  
-<Button variant="ghost">       // Minimal button
-<Button variant="destructive"> // Danger actions
+import { api } from '@/lib/api';
+
+// Login
+const response = await api.auth.login(email, password);
+api.setAuthToken(response.token);
+
+// Check current user
+const user = await api.auth.getCurrentUser();
 ```
+
+### **Airtable Data Operations**
+```typescript
+import { useCampaignData, useInvoiceData } from '@/hooks/useAirtableData';
+
+// In your component
+const { data: campaigns, loading, updateRecord } = useCampaignData();
+
+// Update a record
+await updateRecord(recordId, { status: 'completed' });
+```
+
+### **Available Data Hooks**
+- `useCampaignData()` - Campaign tracker data
+- `useYouTubeData()` - YouTube campaigns
+- `useSoundCloudData()` - SoundCloud campaigns
+- `useSpotifyData()` - Spotify playlisting
+- `useInstagramData()` - Instagram seeding
+- `useInvoiceData()` - Invoice management
+- `useInvoiceRequestsData()` - Invoice requests
+
+## 🚀 Production Deployment
+
+### **Frontend Deployment (Vercel)**
+
+1. **Deploy to Staging**
+   ```bash
+   npm run deploy
+   ```
+
+2. **Deploy to Production**
+   ```bash
+   npm run deploy:prod
+   ```
+
+3. **Configure Vercel Environment Variables**
+   ```bash
+   # In Vercel dashboard or CLI
+   vercel env add VITE_API_BASE_URL
+   vercel env add VITE_AIRTABLE_API_BASE_URL
+   ```
+
+### **Backend Deployment (DigitalOcean)**
+
+1. **Deploy Backend Services**
+   ```bash
+   # Follow backend deployment guide
+   docker-compose -f docker-compose.prod.yml up -d
+   ```
+
+2. **Update Frontend Environment**
+   ```bash
+   # Update .env.local for production
+   VITE_API_BASE_URL=https://your-digitalocean-app.com
+   VITE_AIRTABLE_API_BASE_URL=https://your-digitalocean-app.com/airtable
+   ```
+
+## 🔧 Configuration
+
+### **Environment Variables**
+
+| Variable | Development | Production | Description |
+|----------|-------------|------------|-------------|
+| `VITE_API_BASE_URL` | `http://localhost:3000` | `https://your-domain.com` | RBAC API endpoint |
+| `VITE_AIRTABLE_API_BASE_URL` | `http://localhost:3001` | `https://your-domain.com/airtable` | Airtable API endpoint |
+| `VITE_APP_NAME` | `Ops Flow Red (Dev)` | `Ops Flow Red` | Application name |
+| `VITE_APP_VERSION` | `1.0.0` | `1.0.0` | Application version |
+
+### **API Endpoints**
+
+#### **RBAC API (Port 3000)**
+- `POST /auth/login` - User authentication
+- `POST /auth/logout` - User logout
+- `GET /auth/me` - Get current user
+- `GET /api/users` - Get all users
+- `GET /api/reports` - Get reports
+- `GET /health` - Health check
+
+#### **Airtable API (Port 3001)**
+- `GET /api/airtable/tables` - List all tables
+- `GET /api/airtable/records/:tableName` - Get table records
+- `POST /api/airtable/records/:tableName` - Create record
+- `PUT /api/airtable/records/:tableName/:id` - Update record
+- `DELETE /api/airtable/records/:tableName/:id` - Delete record
+- `GET /api/airtable/stats/:tableName` - Get table statistics
+- `POST /api/airtable/sync/:tableName` - Sync table
+- `GET /health` - Health check
 
 ## 🧪 Testing
 
-The project includes basic component tests and can be extended with:
+### **Connection Testing**
+1. Navigate to Settings page
+2. Check "API Connection Status" section
+3. Verify both RBAC and Airtable APIs are connected
 
-```bash
-npm run test           # Run unit tests
-npm run test:e2e      # Run Playwright E2E tests  
-npm run test:watch    # Run tests in watch mode
+### **Data Flow Testing**
+1. Login with valid credentials
+2. Navigate to Dashboard
+3. Verify KPI data is loading from Airtable
+4. Test record updates and creation
+
+## 🐛 Troubleshooting
+
+### **Common Issues**
+
+1. **CORS Errors**
+   ```bash
+   # Check backend CORS configuration
+   # Ensure frontend URL is in allowed origins
+   ```
+
+2. **API Connection Failed**
+   ```bash
+   # Verify backend servers are running
+   curl http://localhost:3000/health
+   curl http://localhost:3001/health
+   ```
+
+3. **Authentication Issues**
+   ```bash
+   # Check localStorage for auth token
+   # Verify backend authentication endpoints
+   ```
+
+4. **Airtable Data Not Loading**
+   ```bash
+   # Check Airtable API key and base ID
+   # Verify table names match exactly
+   # Check network connectivity to Airtable
+   ```
+
+### **Development Debugging**
+
+1. **Enable Debug Logging**
+   ```typescript
+   // In browser console
+   localStorage.setItem('debug', 'true');
+   ```
+
+2. **Check Network Requests**
+   - Open browser DevTools
+   - Monitor Network tab for API calls
+   - Check for failed requests
+
+3. **Verify Environment Variables**
+   ```bash
+   # Check if variables are loaded
+   console.log(import.meta.env.VITE_API_BASE_URL);
+   ```
+
+## 📊 Data Flow
+
+```
+User Action → Frontend → API Client → Backend → Airtable → PostgreSQL Mirror
+     ↑                                                              ↓
+     └─────────────── Real-time Updates ←──────────────────────────┘
 ```
 
-### Test Coverage Goals
-- [ ] Dashboard KPI loading and display
-- [ ] Campaign CRUD operations
-- [ ] Kanban drag-and-drop functionality
-- [ ] Bulk actions on tables
-- [ ] Form validation and submission
-- [ ] Navigation between pages
+### **Real-time Features**
+- Live KPI updates
+- Campaign status changes
+- Invoice pipeline updates
+- User activity tracking
 
-## 📊 Performance
+## 🔒 Security
 
-- **Build size**: ~500KB gzipped
-- **First load**: <2s on fast 3G
-- **Lighthouse score**: 95+ across all metrics
-- **Tree-shaking**: All unused code removed
-- **Code splitting**: Routes loaded on demand
+- **Authentication**: JWT-based session management
+- **Authorization**: Role-based access control
+- **CORS**: Configured for production domains
+- **HTTPS**: Enforced in production
+- **API Keys**: Secured environment variables
 
-## 🚀 Deployment
+## 📈 Performance
 
-### Build for Production
-```bash
-npm run build
-# Output in /dist folder
-```
-
-### Deploy Options
-- **Vercel**: `vercel --prod`
-- **Netlify**: Drag /dist to Netlify dashboard
-- **AWS S3**: Upload /dist to S3 bucket
-- **Docker**: Use included Dockerfile
-
-### Environment Setup
-```bash
-# Production environment variables
-VITE_API_BASE_URL=https://api.unifiedops.com
-VITE_ANALYTICS_ID=GA-XXXXXXXXX
-VITE_SENTRY_DSN=your-sentry-dsn
-```
+- **Caching**: Redis for session and data caching
+- **CDN**: Vercel global CDN for static assets
+- **Optimization**: Code splitting and lazy loading
+- **Monitoring**: Built-in performance tracking
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit changes: `git commit -m 'Add amazing feature'`
-4. Push to branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
-### Code Standards
-- Use TypeScript for all new code
-- Follow existing naming conventions
-- Add JSDoc comments for complex functions
-- Use semantic CSS classes from design system
-- Write tests for new features
+## 📄 License
 
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License.
 
 ## 🆘 Support
 
-For questions or issues:
-- Create an issue in GitHub
-- Check existing documentation
-- Review the component library docs at [shadcn/ui](https://ui.shadcn.com)
+For support and questions:
+- Check the troubleshooting section
+- Review the API documentation
+- Contact the development team
 
 ---
 
-**Built with ❤️ for music industry operations teams**
+**🎉 Your operations dashboard is now ready for production!**
