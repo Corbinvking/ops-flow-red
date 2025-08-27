@@ -24,7 +24,7 @@ export const LoginForm: React.FC = () => {
 
     const success = await login(email, password);
     if (!success) {
-      setError('Invalid credentials. Try password: "admin"');
+      setError('Invalid credentials. Please check your email and password.');
     }
   };
 
@@ -56,7 +56,7 @@ export const LoginForm: React.FC = () => {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="admin@unifiedops.com"
+                    placeholder="admin@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-10"
@@ -106,8 +106,8 @@ export const LoginForm: React.FC = () => {
             <div className="mt-6 text-center">
               <div className="text-sm text-muted-foreground mb-2">Demo Credentials:</div>
               <div className="text-xs text-muted-foreground space-y-1">
-                <div>Email: <span className="font-mono">admin@unifiedops.com</span></div>
-                <div>Password: <span className="font-mono">admin</span></div>
+                <div>Email: <span className="font-mono">admin@example.com</span></div>
+                <div>Password: <span className="font-mono">admin123</span></div>
               </div>
             </div>
           </CardContent>
