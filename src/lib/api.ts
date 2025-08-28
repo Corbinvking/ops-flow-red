@@ -12,8 +12,8 @@ const getApiConfig = (): APIConfig => {
   
   if (isProduction) {
     return {
-      baseURL: import.meta.env.VITE_API_BASE_URL || 'http://64.225.0.119',
-      airtableBaseURL: import.meta.env.VITE_AIRTABLE_API_BASE_URL || 'http://64.225.0.119',
+      baseURL: import.meta.env.VITE_API_BASE_URL || 'https://artistinfluence.dpdns.org',
+      airtableBaseURL: import.meta.env.VITE_AIRTABLE_API_BASE_URL || 'https://artistinfluence.dpdns.org',
       timeout: 10000,
     };
   }
