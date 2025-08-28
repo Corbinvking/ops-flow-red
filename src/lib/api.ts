@@ -12,8 +12,8 @@ const getApiConfig = (): APIConfig => {
   
   if (isProduction) {
     return {
-      baseURL: import.meta.env.VITE_API_BASE_URL || 'https://your-digitalocean-app.com',
-      airtableBaseURL: import.meta.env.VITE_AIRTABLE_API_BASE_URL || 'https://your-digitalocean-app.com/airtable',
+      baseURL: import.meta.env.VITE_API_BASE_URL || 'http://64.225.0.119',
+      airtableBaseURL: import.meta.env.VITE_AIRTABLE_API_BASE_URL || 'http://64.225.0.119',
       timeout: 10000,
     };
   }
@@ -99,20 +99,20 @@ class APIClient {
 
   // RBAC API Methods
   async login(email: string, password: string): Promise<{ user: any; token: string }> {
-    return this.request(`${this.config.baseURL}/auth/login`, {
+    return this.request(`${this.config.baseURL}/api/auth/login`, {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
   }
 
   async logout(): Promise<void> {
-    return this.request(`${this.config.baseURL}/auth/logout`, {
+    return this.request(`${this.config.baseURL}/api/auth/logout`, {
       method: 'POST',
     });
   }
 
   async getCurrentUser(): Promise<any> {
-    return this.request(`${this.config.baseURL}/auth/me`);
+    return this.request(`${this.config.baseURL}/api/auth/me`);
   }
 
   // User Management Methods
