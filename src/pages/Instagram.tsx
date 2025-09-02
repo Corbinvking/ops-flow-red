@@ -317,6 +317,21 @@ const Instagram: React.FC = () => {
             {currentView === 'campaigns' && (
               <InstagramCampaignBuilder />
             )}
+            {currentView === 'viwBoard' && (
+              <InstagramCampaignBuilder />
+            )}
+            {currentView === 'viwAllPosts' && (
+              <InstagramCampaignBuilder />
+            )}
+            {currentView === 'viwDueSoon' && (
+              <InstagramCampaignBuilder />
+            )}
+            {currentView === 'viwOwnerMe' && (
+              <InstagramCampaignBuilder />
+            )}
+            {currentView === 'viwCompleted' && (
+              <InstagramCampaignBuilder />
+            )}
           </div>
         </SidebarInset>
       </div>

@@ -336,6 +336,30 @@ const SoundCloud: React.FC = () => {
             {currentView === 'queue' && (
               <SoundCloudQueueManager />
             )}
+            {currentView === 'viwActiveCampaigns' && (
+              <SoundCloudQueueManager />
+            )}
+            {currentView === 'viwUpcoming' && (
+              <SoundCloudQueueManager />
+            )}
+            {currentView === 'viwNoReceipt' && (
+              <SoundCloudQueueManager />
+            )}
+            {currentView === 'viwNoStartDate' && (
+              <SoundCloudQueueManager />
+            )}
+            {currentView === 'viwPastMonth' && (
+              <SoundCloudQueueManager />
+            )}
+            {currentView === 'viwInvoiceNotPaid' && (
+              <SoundCloudQueueManager />
+            )}
+            {currentView === 'viwAllCampaigns' && (
+              <SoundCloudQueueManager />
+            )}
+            {currentView === 'viwKanban' && (
+              <SoundCloudQueueManager />
+            )}
           </div>
         </SidebarInset>
       </div>

@@ -375,6 +375,18 @@ const Spotify: React.FC = () => {
             {currentView === 'pipeline' && (
               <SpotifyPipelineManager />
             )}
+            {currentView === 'viwAll' && (
+              <SpotifyPipelineManager />
+            )}
+            {currentView === 'viwOutreach' && (
+              <SpotifyPipelineManager />
+            )}
+            {currentView === 'viwScheduled' && (
+              <SpotifyPipelineManager />
+            )}
+            {currentView === 'viwPublished' && (
+              <SpotifyPipelineManager />
+            )}
           </div>
         </SidebarInset>
       </div>
