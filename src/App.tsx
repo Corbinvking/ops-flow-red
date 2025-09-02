@@ -13,6 +13,7 @@ import Instagram from "./pages/Instagram";
 import Spotify from "./pages/Spotify";
 import Visualizer from "./pages/Visualizer";
 import Settings from "./pages/Settings";
+import DealFlow from "./pages/DealFlow";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const AuthenticatedApp = () => {
           <Route path="youtube" element={<YouTube />} />
           <Route path="instagram" element={<Instagram />} />
           <Route path="spotify" element={<Spotify />} />
+          <Route path="dealflow" element={<DealFlow />} />
           <Route path="visualizer" element={<Visualizer />} />
           <Route path="settings" element={<Settings />} />
         </Route>

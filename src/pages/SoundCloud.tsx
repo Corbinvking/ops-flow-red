@@ -20,12 +20,13 @@ import {
 } from 'lucide-react';
 import { useAirtableData, AIRTABLE_TABLES } from '@/hooks/useAirtableData';
 import { getStatusColor } from '@/lib/ops';
+import SoundCloudQueueManager from '@/components/soundcloud/SoundCloudQueueManager';
 
 type ViewMode = 'operate' | 'data';
 
 const SoundCloud: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('operate');
-  const [currentView, setCurrentView] = useState('viwActiveCampaigns');
+  const [currentView, setCurrentView] = useState('overview');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -210,39 +211,41 @@ const SoundCloud: React.FC = () => {
 
           {/* Main Content */}
           <div className="p-6 space-y-6">
-            <Toolbar
-              title="SoundCloud Campaigns"
-              description="Manage SoundCloud promotion campaigns and automation queue"
-              mode={viewMode}
-              onModeChange={setViewMode}
-              searchValue={searchValue}
-              onSearchChange={setSearchValue}
-              recordCount={filteredCampaigns.length}
-              selectedCount={selectedIds.length}
-              filters={[
-                {
-                  key: 'owner',
-                  label: 'Owner',
-                  value: ownerFilter,
-                  options: owners.map(owner => ({ value: owner, label: owner })),
-                  onChange: setOwnerFilter
-                },
-                {
-                  key: 'status',
-                  label: 'Status',
-                  value: statusFilter,
-                  options: statuses.map(status => ({ value: status, label: status })),
-                  onChange: setStatusFilter
-                }
-              ]}
-              actions={[
-                { label: 'New Campaign', icon: Plus, onClick: () => {} },
-                { label: 'Import CSV', icon: Upload, onClick: () => {}, variant: 'outline' },
-                { label: 'Export Queue', icon: Download, onClick: () => {}, variant: 'outline' }
-              ]}
-            />
+            {currentView === 'overview' && (
+              <>
+                <Toolbar
+                  title="SoundCloud Campaigns"
+                  description="Manage SoundCloud promotion campaigns and automation queue"
+                  mode={viewMode}
+                  onModeChange={setViewMode}
+                  searchValue={searchValue}
+                  onSearchChange={setSearchValue}
+                  recordCount={filteredCampaigns.length}
+                  selectedCount={selectedIds.length}
+                  filters={[
+                    {
+                      key: 'owner',
+                      label: 'Owner',
+                      value: ownerFilter,
+                      options: owners.map(owner => ({ value: owner, label: owner })),
+                      onChange: setOwnerFilter
+                    },
+                    {
+                      key: 'status',
+                      label: 'Status',
+                      value: statusFilter,
+                      options: statuses.map(status => ({ value: status, label: status })),
+                      onChange: setStatusFilter
+                    }
+                  ]}
+                  actions={[
+                    { label: 'New Campaign', icon: Plus, onClick: () => {} },
+                    { label: 'Import CSV', icon: Upload, onClick: () => {}, variant: 'outline' },
+                    { label: 'Export Queue', icon: Download, onClick: () => {}, variant: 'outline' }
+                  ]}
+                />
 
-            {viewMode === 'operate' ? (
+                {viewMode === 'operate' ? (
               <div className="space-y-6">
                 {/* Quick Actions */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -326,6 +329,12 @@ const SoundCloud: React.FC = () => {
                 onSelectionChange={setSelectedIds}
                 onItemClick={handleRecordClick}
               />
+            )}
+              </>
+            )}
+
+            {currentView === 'queue' && (
+              <SoundCloudQueueManager />
             )}
           </div>
         </SidebarInset>

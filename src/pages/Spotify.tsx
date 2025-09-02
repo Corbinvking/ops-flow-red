@@ -18,9 +18,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAirtableData, AIRTABLE_TABLES } from '@/hooks/useAirtableData';
 import { useToast } from '@/hooks/use-toast';
+import SpotifyPipelineManager from '@/components/spotify/SpotifyPipelineManager';
+import { ViewSidebar } from '@/components/ops/ViewSidebar';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 
 const Spotify: React.FC = () => {
   const [viewMode, setViewMode] = useState<'board' | 'table'>('board');
+  const [currentView, setCurrentView] = useState('overview');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [filterOwner, setFilterOwner] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -64,40 +68,59 @@ const Spotify: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-space-grotesk font-bold">Spotify Pipeline</h1>
-          <p className="text-foreground-muted mt-1">
-            Track artist outreach and playlist placement from sourcing to publication.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center rounded-lg bg-surface p-1">
-            <Button
-              variant={viewMode === 'board' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('board')}
-            >
-              <Grid className="h-4 w-4 mr-2" />
-              Board
-            </Button>
-            <Button
-              variant={viewMode === 'table' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('table')}
-            >
-              <List className="h-4 w-4 mr-2" />
-              Table
-            </Button>
+    <SidebarProvider>
+      <div className="flex w-full">
+        <ViewSidebar
+          service="sp"
+          currentView={currentView}
+          onViewChange={setCurrentView}
+          viewCounts={{}}
+        />
+        
+        <SidebarInset>
+          <div className="sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
+            <div className="flex h-14 items-center gap-4 px-6">
+              <SidebarTrigger />
+              <div className="flex-1" />
+            </div>
           </div>
-          <Button size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Artist
-          </Button>
-        </div>
-      </div>
+
+          <div className="p-6 space-y-6">
+            {currentView === 'overview' && (
+              <>
+                {/* Header */}
+                <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-space-grotesk font-bold">Spotify Pipeline</h1>
+              <p className="text-foreground-muted mt-1">
+                Track artist outreach and playlist placement from sourcing to publication.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center rounded-lg bg-surface p-1">
+                <Button
+                  variant={viewMode === 'board' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('board')}
+                >
+                  <Grid className="h-4 w-4 mr-2" />
+                  Board
+                </Button>
+                <Button
+                  variant={viewMode === 'table' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('table')}
+                >
+                  <List className="h-4 w-4 mr-2" />
+                  Table
+                </Button>
+              </div>
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Artist
+              </Button>
+            </div>
+          </div>
 
       {/* Filters */}
       <Card className="card">
@@ -346,7 +369,16 @@ const Spotify: React.FC = () => {
           </CardContent>
         </Card>
       )}
-    </div>
+        </>
+      )}
+
+            {currentView === 'pipeline' && (
+              <SpotifyPipelineManager />
+            )}
+          </div>
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
   );
 };
 

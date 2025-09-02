@@ -65,6 +65,8 @@ export const AT = {
 // Airtable Views Configuration
 export const VIEWS = {
   sc: {
+    "Overview": "overview",
+    "Queue": "queue",
     "Active Campaigns": "viwActiveCampaigns",
     "Upcoming Campaigns": "viwUpcoming",
     "No Receipt": "viwNoReceipt",
@@ -75,6 +77,8 @@ export const VIEWS = {
     "Kanban": "viwKanban"
   },
   ig: {
+    "Overview": "overview",
+    "Campaigns": "campaigns",
     "Board": "viwBoard",
     "All Posts": "viwAllPosts",
     "Due Soon": "viwDueSoon",
@@ -82,7 +86,8 @@ export const VIEWS = {
     "Completed": "viwCompleted"
   },
   sp: {
-    "Pipeline": "viwPipeline",
+    "Overview": "overview",
+    "Pipeline": "pipeline",
     "All": "viwAll",
     "Outreach": "viwOutreach",
     "Scheduled": "viwScheduled",
@@ -98,5 +103,12 @@ export const VIEWS = {
     "Request": "viwRequest",
     "Sent": "viwSent",
     "Paid": "viwPaid"
+  },
+  dealflow: {
+    "Active Deals": "viwActiveDeals",
+    "Pending Deals": "viwPendingDeals",
+    "Completed Deals": "viwCompletedDeals",
+    "All Deals": "viwAllDeals",
+    "Revenue Pipeline": "viwRevenuePipeline"
   }
 };

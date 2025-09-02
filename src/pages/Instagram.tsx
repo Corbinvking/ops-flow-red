@@ -19,12 +19,13 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { useAirtableData, AIRTABLE_TABLES } from '@/hooks/useAirtableData';
+import InstagramCampaignBuilder from '@/components/instagram/InstagramCampaignBuilder';
 
 type ViewMode = 'operate' | 'data';
 
 const Instagram: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('operate');
-  const [currentView, setCurrentView] = useState('viwBoard');
+  const [currentView, setCurrentView] = useState('overview');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectedRecord, setSelectedRecord] = useState<any>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -196,38 +197,40 @@ const Instagram: React.FC = () => {
           </div>
 
           <div className="p-6 space-y-6">
-            <Toolbar
-              title="Instagram Content"
-              description="Manage Instagram posts and content pipeline"
-              mode={viewMode}
-              onModeChange={setViewMode}
-              searchValue={searchValue}
-              onSearchChange={setSearchValue}
-              recordCount={filteredPosts.length}
-              selectedCount={selectedIds.length}
-              filters={[
-                {
-                  key: 'owner',
-                  label: 'Owner',
-                  value: ownerFilter,
-                  options: owners.map(owner => ({ value: owner, label: owner })),
-                  onChange: setOwnerFilter
-                },
-                {
-                  key: 'priority',
-                  label: 'Priority',
-                  value: priorityFilter,
-                  options: priorities.map(priority => ({ value: priority, label: priority })),
-                  onChange: setPriorityFilter
-                }
-              ]}
-              actions={[
-                { label: 'New Post', icon: Plus, onClick: () => {} },
-                { label: 'Upload Assets', icon: Upload, onClick: () => {}, variant: 'outline' }
-              ]}
-            />
+            {currentView === 'overview' && (
+              <>
+                <Toolbar
+                  title="Instagram Content"
+                  description="Manage Instagram posts and content pipeline"
+                  mode={viewMode}
+                  onModeChange={setViewMode}
+                  searchValue={searchValue}
+                  onSearchChange={setSearchValue}
+                  recordCount={filteredPosts.length}
+                  selectedCount={selectedIds.length}
+                  filters={[
+                    {
+                      key: 'owner',
+                      label: 'Owner',
+                      value: ownerFilter,
+                      options: owners.map(owner => ({ value: owner, label: owner })),
+                      onChange: setOwnerFilter
+                    },
+                    {
+                      key: 'priority',
+                      label: 'Priority',
+                      value: priorityFilter,
+                      options: priorities.map(priority => ({ value: priority, label: priority })),
+                      onChange: setPriorityFilter
+                    }
+                  ]}
+                  actions={[
+                    { label: 'New Post', icon: Plus, onClick: () => {} },
+                    { label: 'Upload Assets', icon: Upload, onClick: () => {}, variant: 'outline' }
+                  ]}
+                />
 
-            {viewMode === 'operate' ? (
+                {viewMode === 'operate' ? (
               <div className="space-y-6">
                 {/* Automation Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -307,6 +310,12 @@ const Instagram: React.FC = () => {
                 onSelectionChange={setSelectedIds}
                 onItemClick={handleRecordClick}
               />
+            )}
+              </>
+            )}
+
+            {currentView === 'campaigns' && (
+              <InstagramCampaignBuilder />
             )}
           </div>
         </SidebarInset>

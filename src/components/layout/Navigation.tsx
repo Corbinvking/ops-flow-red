@@ -8,7 +8,8 @@ import {
   Music, 
   Palette,
   Settings,
-  Badge
+  Badge,
+  Handshake
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -26,6 +27,7 @@ const navItems: NavItem[] = [
   { id: 'youtube', label: 'YouTube', icon: Youtube, path: '/youtube' },
   { id: 'instagram', label: 'Instagram', icon: Instagram, path: '/instagram', badge: 8 },
   { id: 'spotify', label: 'Spotify', icon: Music, path: '/spotify', badge: 5 },
+  { id: 'dealflow', label: 'Deal Flow', icon: Handshake, path: '/dealflow' },
   { id: 'visualizer', label: 'Visualizer', icon: Palette, path: '/visualizer' },
   { id: 'settings', label: 'Settings', icon: Settings, path: '/settings' },
 ];
