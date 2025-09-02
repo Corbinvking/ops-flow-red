@@ -16,6 +16,18 @@ export const supabase = {
     delete: () => ({
       data: null,
       error: null
+    }),
+    eq: (column: string, value: any) => ({
+      data: [],
+      error: null
+    }),
+    contains: (column: string, value: any) => ({
+      data: [],
+      error: null
+    }),
+    single: () => ({
+      data: null,
+      error: null
     })
   }),
   functions: {
