@@ -11,7 +11,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '../../../integrations/supabase/client';
 import { 
   Upload, AlertCircle, CheckCircle, User, Music, Calendar, Settings, 
   Zap, Target, BarChart3, Clock, Sparkles, FileText, Plus, X 

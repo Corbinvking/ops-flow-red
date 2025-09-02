@@ -19,7 +19,7 @@ import { useNavigate } from 'react-router-dom';
 import { SimilarArtists } from './SimilarArtists';
 import { CreditHistory } from './CreditHistory';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell } from 'recharts';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '../../../integrations/supabase/client';
 
 interface Achievement {
   id: string;
