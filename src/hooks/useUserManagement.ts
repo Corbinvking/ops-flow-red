@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useContext } from 'react';
 import { api } from '@/lib/api';
 import { DBUser, CreateUserData, UpdateUserData, UserStats } from '@/types';
-import { AuthContext } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
 export const useUserManagement = () => {
@@ -10,7 +10,7 @@ export const useUserManagement = () => {
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<UserStats | null>(null);
   const { toast } = useToast();
-  const { user: currentUser, refreshUser } = useContext(AuthContext);
+  const { user: currentUser } = useAuth();
 
   // Fetch all users
   const fetchUsers = useCallback(async () => {
