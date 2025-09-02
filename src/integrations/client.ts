@@ -2,7 +2,8 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = "https://mwtrdhnctzasddbeilwm.supabase.co";
+// Updated to point to Digital Ocean backend
+const SUPABASE_URL = "http://64.225.15.35:8000";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im13dHJkaG5jdHphc2RkYmVpbHdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM0Njg2OTEsImV4cCI6MjA2OTA0NDY5MX0.KpfR54ZUuhe7wZ-yf1rZny0Rk1C17MlLssB-EjOymRY";
 
 // Import the supabase client like this:
