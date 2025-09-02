@@ -78,6 +78,7 @@ export const supabase = {
     onAuthStateChange: (callback: (event: string, session: any) => void) => {
       // Mock auth state change listener - NO AUTO LOGIN
       // This ensures the auth wall remains intact
+      // Return the proper structure that Supabase expects
       return {
         data: {
           subscription: {
@@ -91,6 +92,15 @@ export const supabase = {
       return {
         data: {
           session: null
+        },
+        error: null
+      };
+    },
+    getUser: async () => {
+      // Return no user to maintain auth wall
+      return {
+        data: {
+          user: null
         },
         error: null
       };
