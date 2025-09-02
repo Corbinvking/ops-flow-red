@@ -1,0 +1,87 @@
+import React, { useState } from 'react';
+import PortalHeader from '@/components/dealflow/PortalHeader';
+import ClientDetailsForm, { ClientDetails } from '@/components/dealflow/ClientDetailsForm';
+import CampaignBuilder from '@/components/dealflow/CampaignBuilder';
+import CommissionTracker, { CommissionData } from '@/components/dealflow/CommissionTracker';
+import CampaignSummary from '@/components/dealflow/CampaignSummary';
+import ProposalGeneration from '@/components/dealflow/ProposalGeneration';
+import { CampaignData, getDefaultCampaignData } from '@/types/campaign';
+
+const SalesPortal: React.FC = () => {
+  const [clientDetails, setClientDetails] = useState<ClientDetails>({
+    artistName: '',
+    songTitle: '',
+    genre: '',
+    tier: '',
+    releaseDate: new Date(),
+  });
+  const [campaignData, setCampaignData] = useState<CampaignData>(getDefaultCampaignData());
+
+  const calculateCommissions = (campaignData: CampaignData): CommissionData => {
+    const calculateGrossCommission = (price: number) => price * 0.2;
+    const calculateNetCommission = (price: number) => price * 0.3 * 0.2;
+    
+    // Apply per-service discount to prices
+    const applyServiceDiscount = (price: number, discount: number) => {
+      return price * (1 - discount / 100);
+    };
+
+    return {
+      youtubeAds: campaignData.youtubeAds.enabled ? calculateGrossCommission(applyServiceDiscount(campaignData.youtubeAds.totalPrice, campaignData.youtubeAds.discount)) : 0,
+      spotifyPlaylisting: campaignData.spotifyPlaylisting.enabled ? calculateGrossCommission(applyServiceDiscount(campaignData.spotifyPlaylisting.price, campaignData.spotifyPlaylisting.discount)) : 0,
+      soundcloudReposts: campaignData.soundcloudReposts.enabled ? calculateGrossCommission(applyServiceDiscount(campaignData.soundcloudReposts.price, campaignData.soundcloudReposts.discount)) : 0,
+      instagramSeeding: campaignData.instagramSeeding.enabled ? calculateNetCommission(applyServiceDiscount(campaignData.instagramSeeding.price, campaignData.instagramSeeding.discount)) : 0,
+      metaTiktokAds: campaignData.metaTiktokAds.enabled ? calculateNetCommission(applyServiceDiscount(campaignData.metaTiktokAds.price, campaignData.metaTiktokAds.discount)) : 0,
+    };
+  };
+
+  const isFormValid = () => {
+    const detailsValid = clientDetails.artistName && 
+                        clientDetails.songTitle && 
+                        clientDetails.genre &&
+                        clientDetails.tier;
+    
+    const hasActiveServices = Object.values(campaignData).some(service => service.enabled && 
+      ((service as any).price > 0 || (service as any).totalPrice > 0));
+    
+    return detailsValid && hasActiveServices;
+  };
+
+  const commissions = calculateCommissions(campaignData);
+
+  return (
+    <div className="min-h-screen bg-background">
+      <PortalHeader />
+      
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          <div className="lg:col-span-3 space-y-12">
+            <ClientDetailsForm
+              details={clientDetails}
+              onUpdate={setClientDetails}
+            />
+            
+            <CampaignBuilder
+              campaignData={campaignData}
+              onUpdate={setCampaignData}
+            />
+            
+            <CampaignSummary campaignData={campaignData} />
+            
+            <ProposalGeneration
+              clientDetails={clientDetails}
+              campaignData={campaignData}
+              isFormValid={isFormValid()}
+            />
+          </div>
+          
+          <div className="lg:col-span-1">
+            <CommissionTracker commissions={commissions} />
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default SalesPortal;
