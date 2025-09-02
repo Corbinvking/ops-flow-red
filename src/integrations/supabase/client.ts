@@ -76,24 +76,8 @@ export const supabase = {
       };
     },
     onAuthStateChange: (callback: (event: string, session: any) => void) => {
-      // Mock auth state change listener
-      const mockSession = {
-        user: {
-          id: 'mock-user-id',
-          email: 'demo@example.com',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        },
-        access_token: 'mock-token',
-        refresh_token: 'mock-refresh-token',
-        expires_at: Date.now() + 3600000
-      };
-      
-      // Simulate initial auth state
-      setTimeout(() => {
-        callback('SIGNED_IN', mockSession);
-      }, 100);
-      
+      // Mock auth state change listener - NO AUTO LOGIN
+      // This ensures the auth wall remains intact
       return {
         data: {
           subscription: {
@@ -103,20 +87,10 @@ export const supabase = {
       };
     },
     getSession: async () => {
-      // Mock session data
+      // Return no session to maintain auth wall
       return {
         data: {
-          session: {
-            user: {
-              id: 'mock-user-id',
-              email: 'demo@example.com',
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            },
-            access_token: 'mock-token',
-            refresh_token: 'mock-refresh-token',
-            expires_at: Date.now() + 3600000
-          }
+          session: null
         },
         error: null
       };
