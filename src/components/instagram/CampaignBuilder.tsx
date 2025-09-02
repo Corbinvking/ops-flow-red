@@ -14,7 +14,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Creator, Campaign, CampaignForm, MUSIC_GENRES, POST_TYPES, TERRITORY_PREFERENCES } from "@/lib/types";
 import { generateCampaign, generateUUID } from "@/lib/campaignAlgorithm";
 import { getCreators, formatNumber, formatCurrency, saveCampaign } from "@/lib/localStorage";
-import { getSupabaseCreators, migrateCreatorsToSupabase } from "@/lib/creatorMigration";
+import { getSupabaseCreators, migrateCreatorsToSupabase } from "../../lib/creatorMigration";
 import { exportCampaignCSV, initializeSampleData } from "@/lib/csvUtils";
 import { toast } from "@/hooks/use-toast";
 

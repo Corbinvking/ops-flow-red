@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '../../../integrations/supabase/client';
 import { motion } from 'framer-motion';
 import { DraggableGenreManager } from '@/components/admin/DraggableGenreManager';
 import { GenreMindMap } from '@/components/admin/GenreMindMap';

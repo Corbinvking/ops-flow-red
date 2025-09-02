@@ -9,7 +9,7 @@ import { Upload, Download, AlertCircle, CheckCircle2, FileText } from "lucide-re
 import { useDropzone } from "react-dropzone";
 import { toast } from "@/hooks/use-toast";
 import { parsePostsCsv, downloadCsvTemplate, CsvImportResult } from "@/lib/postCsvUtils";
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '../../integrations/supabase/client';
 
 interface BulkPostImportProps {
   campaignId: string;

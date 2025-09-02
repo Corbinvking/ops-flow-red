@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Edit, Trash2, TrendingUp, Upload, Download, AlertCircle } from "lucide-react";
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '../../integrations/supabase/client';
 import { toast } from "@/hooks/use-toast";
 import { formatNumber } from "@/lib/localStorage";
 import { validateInstagramUrl, calculateEngagementRate, getCurrentDateTime } from "@/lib/instagramUtils";
