@@ -1,8 +1,9 @@
 // Supabase-compatible interface that connects to your custom RBAC API backend
 // This provides the same interface that the integrated tools expect
 
-const API_BASE_URL = "http://64.225.15.35:3000";
-const AIRTABLE_API_BASE_URL = "http://64.225.15.35:3001";
+// Updated to use the correct backend domain from the guide
+const API_BASE_URL = "https://artistinfluence.dpdns.org";
+const AIRTABLE_API_BASE_URL = "https://artistinfluence.dpdns.org";
 
 // Helper function to make API calls
 async function apiCall(endpoint: string, options: RequestInit = {}) {
@@ -152,7 +153,7 @@ export const supabase = {
   auth: {
     signInWithPassword: async ({ email, password }: { email: string; password: string }) => {
       try {
-        const response = await apiCall('/auth/login', {
+        const response = await apiCall('/api/auth/login', {
           method: 'POST',
           body: JSON.stringify({ email, password })
         });
@@ -189,7 +190,7 @@ export const supabase = {
     
     signUp: async ({ email, password, options }: { email: string; password: string; options?: any }) => {
       try {
-        const response = await apiCall('/auth/register', {
+        const response = await apiCall('/api/auth/register', {
           method: 'POST',
           body: JSON.stringify({ email, password, ...options })
         });
