@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { TagSelectDropdown } from "@/components/instagram/TagSelectDropdown";
+import { TagSelectDropdown } from "@/components/TagSelectDropdown";
 import { X } from "lucide-react";
 import { Creator, COUNTRIES } from "@/lib/types";
 import { saveCreator } from "@/lib/localStorage";

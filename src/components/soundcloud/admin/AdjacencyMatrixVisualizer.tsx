@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '../../../integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { motion } from 'framer-motion';
 import { Network, Save, RotateCcw, Zap, TrendingUp } from 'lucide-react';
 

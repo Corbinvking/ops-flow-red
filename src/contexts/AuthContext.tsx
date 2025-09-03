@@ -1,19 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-// Custom types that match what the integrated tools expect
-interface User {
-  id: string;
-  email: string;
-  created_at: string;
-  updated_at: string;
-}
-
-interface Session {
-  access_token: string;
-  refresh_token: string;
-  expires_at: number;
-  user: User;
-}
-
+import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -70,54 +56,65 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isModerator = userRoles.includes('moderator');
   const isMember = member !== null;
 
+  // Helper function to fetch user roles and member data
+  const fetchUserData = async (userId: string, userEmail: string) => {
+    try {
+      // Fetch user roles
+      const { data: rolesData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
+      
+      const roles = rolesData?.map(r => r.role) || [];
+      setUserRoles(roles);
+
+      // Fetch complete member data including all profile fields
+      const { data: memberData } = await supabase
+        .from('members')
+        .select(`
+          id, name, primary_email, emails, status, size_tier, 
+          monthly_repost_limit, submissions_this_month, net_credits,
+          soundcloud_url, spotify_url, families, soundcloud_followers
+        `)
+        .contains('emails', [userEmail])
+        .single();
+      
+      setMember(memberData || null);
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      setMember(null);
+    }
+  };
+
   useEffect(() => {
-    // Set up auth state listener
+    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        if (session) {
-          setSession(session);
-          setUser(session.user);
-          // For now, set default roles - you can implement proper role fetching later
-          setUserRoles(['member']);
-          setMember({
-            id: session.user.id,
-            name: session.user.email || 'User',
-            primary_email: session.user.email || '',
-            emails: [session.user.email || ''],
-            status: 'active',
-            size_tier: 'standard',
-            monthly_repost_limit: 10,
-            submissions_this_month: 0,
-            net_credits: 100
-          });
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user) {
+          // Fetch user roles and member data after authentication
+          fetchUserData(session.user.id, session.user.email!);
         } else {
-          setSession(null);
-          setUser(null);
+          // Clear user data on logout
           setUserRoles([]);
           setMember(null);
         }
+        
         setLoading(false);
       }
     );
 
-    // Check for existing session
+    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        setSession(session);
-        setUser(session.user);
-        setUserRoles(['member']);
-        setMember({
-          id: session.user.id,
-          name: session.user.email || 'User',
-          primary_email: session.user.email || '',
-          emails: [session.user.email || ''],
-          status: 'active',
-          size_tier: 'standard',
-          monthly_repost_limit: 10,
-          submissions_this_month: 0,
-          net_credits: 100
-        });
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        fetchUserData(session.user.id, session.user.email!);
       }
+      
       setLoading(false);
     });
 
@@ -126,6 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = async (email: string, password: string) => {
     try {
+      // Attempt to sign in first
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -140,6 +138,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error };
       }
 
+      // After successful sign-in, we'll check authorization in the auth state change handler
+      // The fetchUserData function will get the roles, and if the user has no roles and is not a member,
+      // we can handle that in the UI routing logic
+      
       toast({
         title: "Welcome back!",
         description: "You have been signed in successfully.",
@@ -158,10 +160,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (email: string, password: string) => {
     try {
+      const redirectUrl = `${window.location.origin}/`;
+      
       const { error } = await supabase.auth.signUp({
         email,
         password,
-        options: {}
+        options: {
+          emailRedirectTo: redirectUrl
+        }
       });
 
       if (error) {
@@ -190,9 +196,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const sendMagicLink = async (email: string) => {
     try {
+      const redirectUrl = `${window.location.origin}/`;
+      
       const { error } = await supabase.auth.signInWithOtp({
         email,
-        options: {}
+        options: {
+          emailRedirectTo: redirectUrl
+        }
       });
 
       if (error) {

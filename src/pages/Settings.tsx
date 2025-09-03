@@ -28,13 +28,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { mockUser } from '@/data/mockData';
 import { useToast } from '@/hooks/use-toast';
 import { ConnectionStatus } from '@/components/ConnectionStatus';
-// UserManagementPanel removed - admin components deleted
-import { useAuth } from '@/contexts/AuthContext';
+import { UserManagementPanel } from '@/components/admin/UserManagementPanel';
+import { AuthContext } from '@/contexts/AuthContext';
 
 const Settings: React.FC = () => {
   const [user, setUser] = useState(mockUser);
   const [activeTab, setActiveTab] = useState('profile');
-  const { user: authUser } = useAuth();
+  const { user: authUser } = useContext(AuthContext);
   const [apiKeys, setApiKeys] = useState({
     soundcloud: '••••••••••••••••••••••••sk_test_123',
     youtube: '••••••••••••••••••••••••yt_key_456',
@@ -426,7 +426,7 @@ const Settings: React.FC = () => {
 
         {canManageUsers && (
           <TabsContent value="users" className="space-y-6">
-                            {/* UserManagementPanel removed - admin components deleted */}
+            <UserManagementPanel />
           </TabsContent>
         )}
       </Tabs>

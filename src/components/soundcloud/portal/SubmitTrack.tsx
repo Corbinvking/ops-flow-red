@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '../../../integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { Upload, AlertCircle, CheckCircle, User, Music, Calendar, Settings } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 

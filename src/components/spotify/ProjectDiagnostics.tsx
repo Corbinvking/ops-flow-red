@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { supabase } from '../../integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import { APP_CAMPAIGN_SOURCE, APP_CAMPAIGN_TYPE, PROJECT_NAME, PROJECT_ID } from '@/lib/constants';
 import { CheckCircle, AlertTriangle, Shield, Database, Eye, Zap } from 'lucide-react';
 

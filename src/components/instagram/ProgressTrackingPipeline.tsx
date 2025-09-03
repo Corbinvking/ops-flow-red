@@ -12,7 +12,7 @@ import {
   TrendingUp
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "../../integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PipelineStage {
   id: string;

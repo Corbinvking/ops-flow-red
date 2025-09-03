@@ -14,17 +14,17 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Creator, Campaign, CampaignForm, MUSIC_GENRES, POST_TYPES, TERRITORY_PREFERENCES } from "@/lib/types";
 import { generateCampaign, generateUUID } from "@/lib/campaignAlgorithm";
 import { getCreators, formatNumber, formatCurrency, saveCampaign } from "@/lib/localStorage";
-import { getSupabaseCreators, migrateCreatorsToSupabase } from "../../lib/creatorMigration";
+import { getSupabaseCreators, migrateCreatorsToSupabase } from "@/lib/creatorMigration";
 import { exportCampaignCSV, initializeSampleData } from "@/lib/csvUtils";
 import { toast } from "@/hooks/use-toast";
 
-import { CreatorSearchModal } from "@/components/instagram/CreatorSearchModal";
+import { CreatorSearchModal } from "@/components/CreatorSearchModal";
 import { getAllTags, saveMultipleTagsToCollection, deleteTagFromCollection } from "@/lib/tagStorage";
 import { useTagSync } from "@/hooks/useTagSync";
-import { TagSelectDropdown } from "@/components/instagram/TagSelectDropdown";
-import { MultiGenreSelect } from "@/components/instagram/MultiGenreSelect";
-import { CampaignSuccessPredictor } from "@/components/instagram/CampaignSuccessPredictor";
-import { SmartRecommendations } from "@/components/instagram/SmartRecommendations";
+import { TagSelectDropdown } from "@/components/TagSelectDropdown";
+import { MultiGenreSelect } from "@/components/MultiGenreSelect";
+import { CampaignSuccessPredictor } from "@/components/CampaignSuccessPredictor";
+import { SmartRecommendations } from "@/components/SmartRecommendations";
 
 const CampaignBuilder = () => {
   const navigate = useNavigate();

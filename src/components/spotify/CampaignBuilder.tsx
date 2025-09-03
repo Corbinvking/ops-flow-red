@@ -1,8 +1,8 @@
 import { useState } from "react";
-import Layout from "@/components/spotify/Layout";
-import CampaignConfiguration from "@/components/spotify/CampaignConfiguration";
-import AIRecommendations from "@/components/spotify/AIRecommendations";
-import CampaignReview from "@/components/spotify/CampaignReview";
+import Layout from "@/components/Layout";
+import CampaignConfiguration from "@/components/CampaignConfiguration";
+import AIRecommendations from "@/components/AIRecommendations";
+import CampaignReview from "@/components/CampaignReview";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";

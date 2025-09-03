@@ -1,23 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-// Custom types that match what the integrated tools expect
-interface User {
-  id: string;
-  email: string;
-  created_at: string;
-  updated_at: string;
-}
-
-interface Session {
-  access_token: string;
-  refresh_token: string;
-  expires_at: number;
-  user: User;
-}
-
-interface AuthError {
-  message: string;
-}
-
+import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 

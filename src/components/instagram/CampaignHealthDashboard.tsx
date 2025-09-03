@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { AlertTriangle, Clock, CheckCircle, XCircle, DollarSign, Calendar, TrendingUp, Users } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "../../integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 
 interface CampaignHealthMetrics {
   overduePayments: number;

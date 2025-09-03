@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '../../../integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Users, Search, Filter, Mail, Activity, TrendingUp, Crown, AlertCircle, 
   CheckCircle, XCircle, ExternalLink, ChevronUp, ChevronDown, Music, 
