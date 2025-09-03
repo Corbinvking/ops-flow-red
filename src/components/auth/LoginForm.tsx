@@ -11,7 +11,7 @@ export const LoginForm: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { login, isLoading } = useAuth();
+  const { signIn, loading } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,8 +22,8 @@ export const LoginForm: React.FC = () => {
       return;
     }
 
-    const success = await login(email, password);
-    if (!success) {
+    const result = await signIn(email, password);
+    if (result.error) {
       setError('Invalid credentials. Please check your email and password.');
     }
   };
@@ -60,7 +60,7 @@ export const LoginForm: React.FC = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-10"
-                    disabled={isLoading}
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -76,7 +76,7 @@ export const LoginForm: React.FC = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-10"
-                    disabled={isLoading}
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -90,9 +90,9 @@ export const LoginForm: React.FC = () => {
               <Button 
                 type="submit" 
                 className="w-full" 
-                disabled={isLoading}
+                disabled={loading}
               >
-                {isLoading ? (
+                {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Signing in...

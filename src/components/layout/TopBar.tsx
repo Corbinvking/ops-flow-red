@@ -14,10 +14,10 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export const TopBar: React.FC = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
 
   const handleLogout = () => {
-    logout();
+    signOut();
   };
 
   return (

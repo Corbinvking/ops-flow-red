@@ -1,16 +1,27 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { api } from '@/lib/api';
 
-// Mock user and session types
+// User interface matching your RBAC backend
 interface User {
   id: string;
   email: string;
+  role: string;
+  first_name?: string;
+  last_name?: string;
+  is_active: boolean;
+  created_at: string;
+  last_login?: string;
 }
 
+// Session interface
 interface Session {
   user: User;
+  token: string;
+  expires_at: string;
 }
 
+// Member interface for additional user data
 interface Member {
   id: string;
   name: string;
@@ -55,101 +66,162 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(false); // Start as false since we're not loading
-  const [userRoles, setUserRoles] = useState<string[]>(['admin']); // Default to admin for demo
-  const [member, setMember] = useState<Member | null>({
-    id: '1',
-    name: 'Demo User',
-    primary_email: 'demo@artistinfluence.com',
-    emails: ['demo@artistinfluence.com'],
-    status: 'active',
-    size_tier: 'premium',
-    monthly_repost_limit: 50,
-    submissions_this_month: 12,
-    net_credits: 150,
-    soundcloud_url: 'https://soundcloud.com/demo',
-    spotify_url: 'https://open.spotify.com/user/demo',
-    families: ['Electronic', 'Hip-Hop'],
-    soundcloud_followers: 5000
-  });
+  const [loading, setLoading] = useState(true);
+  const [userRoles, setUserRoles] = useState<string[]>([]);
+  const [member, setMember] = useState<Member | null>(null);
   const { toast } = useToast();
 
   const isAdmin = userRoles.includes('admin');
   const isModerator = userRoles.includes('moderator');
   const isMember = member !== null;
 
-  // Mock authentication functions
+  // Check for existing session on mount
+  useEffect(() => {
+    const checkExistingSession = async () => {
+      try {
+        const token = localStorage.getItem('authToken');
+        if (token) {
+          api.setAuthToken(token);
+          const userData = await api.auth.getCurrentUser();
+          if (userData) {
+            setUser(userData);
+            setUserRoles([userData.role]);
+            setSession({
+              user: userData,
+              token,
+              expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error checking existing session:', error);
+        localStorage.removeItem('authToken');
+        api.clearAuthToken();
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkExistingSession();
+  }, []);
+
+  // Real authentication functions
   const signIn = async (email: string, password: string) => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Mock successful login
-    const mockUser: User = { id: '1', email };
-    const mockSession: Session = { user: mockUser };
-    
-    setUser(mockUser);
-    setSession(mockSession);
-    
-    toast({
-      title: "Success",
-      description: "Signed in successfully",
-    });
-    
-    return { error: null };
+    try {
+      setLoading(true);
+      const response = await api.auth.login(email, password);
+      
+      if (response.user && response.token) {
+        // Store token
+        localStorage.setItem('authToken', response.token);
+        api.setAuthToken(response.token);
+        
+        // Set user and session
+        setUser(response.user);
+        setUserRoles([response.user.role]);
+        setSession({
+          user: response.user,
+          token: response.token,
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+        });
+
+        toast({
+          title: "Welcome back!",
+          description: "You have been signed in successfully.",
+        });
+
+        return { error: null };
+      } else {
+        throw new Error('Invalid response from server');
+      }
+    } catch (error: any) {
+      console.error('Login failed:', error);
+      
+      const errorMessage = error.message || 'Login failed. Please check your credentials.';
+      toast({
+        title: "Login Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+
+      return { error };
+    } finally {
+      setLoading(false);
+    }
   };
 
   const signUp = async (email: string, password: string) => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Mock successful signup
-    const mockUser: User = { id: '1', email };
-    const mockSession: Session = { user: mockUser };
-    
-    setUser(mockUser);
-    setSession(mockSession);
-    
-    toast({
-      title: "Success",
-      description: "Account created successfully",
-    });
-    
-    return { error: null };
+    try {
+      setLoading(true);
+      
+      // For now, we'll just show a message since signup might not be enabled
+      toast({
+        title: "Sign Up",
+        description: "Please contact your administrator to create an account.",
+      });
+
+      return { error: null };
+    } catch (error: any) {
+      console.error('Sign up failed:', error);
+      
+      toast({
+        title: "Sign Up Failed",
+        description: error.message || 'Failed to create account.',
+        variant: "destructive",
+      });
+
+      return { error };
+    } finally {
+      setLoading(false);
+    }
   };
 
   const signOut = async () => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    setUser(null);
-    setSession(null);
-    
-    toast({
-      title: "Success",
-      description: "Signed out successfully",
-    });
+    try {
+      // Call logout endpoint
+      await api.auth.logout();
+    } catch (error) {
+      console.error('Logout API call failed:', error);
+    } finally {
+      // Clear local state regardless of API call success
+      localStorage.removeItem('authToken');
+      api.clearAuthToken();
+      setUser(null);
+      setSession(null);
+      setUserRoles([]);
+      setMember(null);
+      
+      toast({
+        title: "Signed out",
+        description: "You have been signed out successfully.",
+      });
+    }
   };
 
   const sendMagicLink = async (email: string) => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    toast({
-      title: "Magic Link Sent",
-      description: `Check your email at ${email}`,
-    });
-    
-    return { error: null };
-  };
+    try {
+      setLoading(true);
+      
+      toast({
+        title: "Magic Link",
+        description: "Magic link functionality is not currently enabled. Please use email/password login.",
+      });
 
-  // Initialize with mock data for demo purposes
-  useEffect(() => {
-    const mockUser: User = { id: '1', email: 'demo@artistinfluence.com' };
-    const mockSession: Session = { user: mockUser };
-    
-    setUser(mockUser);
-    setSession(mockSession);
-  }, []);
+      return { error: null };
+    } catch (error: any) {
+      console.error('Magic link failed:', error);
+      
+      toast({
+        title: "Magic Link Failed",
+        description: error.message || 'Failed to send magic link.',
+        variant: "destructive",
+      });
+
+      return { error };
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const value: AuthContextType = {
     user,
