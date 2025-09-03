@@ -40,63 +40,112 @@ async function airtableApiCall(endpoint: string, options: RequestInit = {}) {
   return response.json();
 }
 
-// Create a Supabase-compatible client
+// Create a more comprehensive Supabase-compatible client
 export const supabase = {
-  from: (table: string) => ({
-    select: (columns: string = '*') => ({
-      data: [],
-      error: null,
+  from: (table: string) => {
+    const queryBuilder = {
+      select: (columns: string = '*') => {
+        const selectBuilder = {
+          data: [],
+          error: null,
+          eq: (column: string, value: any) => ({
+            data: [],
+            error: null,
+            single: () => ({
+              data: null,
+              error: null
+            }),
+            contains: (column: string, value: any) => ({
+              data: [],
+              error: null
+            }),
+            single: () => ({
+              data: null,
+              error: null
+            })
+          }),
+          contains: (column: string, value: any) => ({
+            data: [],
+            error: null
+          }),
+          single: () => ({
+            data: null,
+            error: null
+          }),
+          eq: (column: string, value: any) => ({
+            data: [],
+            error: null,
+            single: () => ({
+              data: null,
+              error: null
+            }),
+            contains: (column: string, value: any) => ({
+              data: [],
+              error: null
+            }),
+            single: () => ({
+              data: null,
+              error: null
+            })
+          })
+        };
+        
+        // Make selectBuilder callable as a function (some tools expect this)
+        return Object.assign(selectBuilder, {
+          // Add function callability
+          call: () => selectBuilder,
+          // Ensure all methods return the same structure
+          then: (callback: any) => Promise.resolve(selectBuilder).then(callback)
+        });
+      },
+      insert: (data: any) => ({
+        data: null,
+        error: null,
+        then: (callback: any) => Promise.resolve({ data: null, error: null }).then(callback)
+      }),
+      update: (data: any) => ({
+        data: null,
+        error: null,
+        then: (callback: any) => Promise.resolve({ data: null, error: null }).then(callback)
+      }),
+      delete: () => ({
+        data: null,
+        error: null,
+        then: (callback: any) => Promise.resolve({ data: null, error: null }).then(callback)
+      }),
       eq: (column: string, value: any) => ({
         data: [],
         error: null,
         single: () => ({
           data: null,
           error: null
-        })
+        }),
+        then: (callback: any) => Promise.resolve({ data: [], error: null }).then(callback)
       }),
       contains: (column: string, value: any) => ({
         data: [],
-        error: null
+        error: null,
+        then: (callback: any) => Promise.resolve({ data: [], error: null }).then(callback)
       }),
       single: () => ({
         data: null,
-        error: null
+        error: null,
+        then: (callback: any) => Promise.resolve({ data: null, error: null }).then(callback)
       })
-    }),
-    insert: (data: any) => ({
-      data: null,
-      error: null
-    }),
-    update: (data: any) => ({
-      data: null,
-      error: null
-    }),
-    delete: () => ({
-      data: null,
-      error: null
-    }),
-    eq: (column: string, value: any) => ({
-      data: [],
-      error: null,
-      single: () => ({
-        data: null,
-        error: null
-      })
-    }),
-    contains: (column: string, value: any) => ({
-      data: [],
-      error: null
-    }),
-    single: () => ({
-      data: null,
-      error: null
-    })
-  }),
+    };
+    
+    // Make queryBuilder callable as a function
+    return Object.assign(queryBuilder, {
+      call: () => queryBuilder,
+      then: (callback: any) => Promise.resolve(queryBuilder).then(callback)
+    });
+  },
   
   functions: {
     invoke: (functionName: string, options: any) => ({
       data: null,
-      error: null
+      error: null,
+      then: (callback: any) => Promise.resolve({ data: null, error: null }).then(callback)
     })
   },
   
