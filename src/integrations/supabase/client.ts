@@ -1,11 +1,9 @@
-// Supabase-compatible interface that connects to your custom RBAC API backend
-// This provides the same interface that the integrated tools expect
+// Direct backend authentication system - NO MORE SUPABASE COMPATIBILITY LAYER
+// This eliminates the 'i is not a function' error by using simple, direct API calls
 
-// Updated to use the correct backend domain from the guide
 const API_BASE_URL = "https://artistinfluence.dpdns.org";
-const AIRTABLE_API_BASE_URL = "https://artistinfluence.dpdns.org";
 
-// Helper function to make API calls
+// Simple API call function
 async function apiCall(endpoint: string, options: RequestInit = {}) {
   const url = `${API_BASE_URL}${endpoint}`;
   const response = await fetch(url, {
@@ -23,140 +21,36 @@ async function apiCall(endpoint: string, options: RequestInit = {}) {
   return response.json();
 }
 
-// Helper function for Airtable API calls
-async function airtableApiCall(endpoint: string, options: RequestInit = {}) {
-  const url = `${AIRTABLE_API_BASE_URL}${endpoint}`;
-  const response = await fetch(url, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    ...options,
-  });
-  
-  if (!response.ok) {
-    throw new Error(`Airtable API call failed: ${response.statusText}`);
-  }
-  
-  return response.json();
-}
-
-// Create a more comprehensive Supabase-compatible client
+// Create a minimal, working authentication client
 export const supabase = {
-  from: (table: string) => {
-    const queryBuilder = {
-      select: (columns: string = '*') => {
-        const selectBuilder = {
-          data: [],
-          error: null,
-          eq: (column: string, value: any) => ({
-            data: [],
-            error: null,
-            single: () => ({
-              data: null,
-              error: null
-            }),
-            contains: (column: string, value: any) => ({
-              data: [],
-              error: null
-            }),
-            single: () => ({
-              data: null,
-              error: null
-            })
-          }),
-          contains: (column: string, value: any) => ({
-            data: [],
-            error: null
-          }),
-          single: () => ({
-            data: null,
-            error: null
-          }),
-          eq: (column: string, value: any) => ({
-            data: [],
-            error: null,
-            single: () => ({
-              data: null,
-              error: null
-            }),
-            contains: (column: string, value: any) => ({
-              data: [],
-              error: null
-            }),
-            single: () => ({
-              data: null,
-              error: null
-            })
-          })
-        };
-        
-        // Make selectBuilder callable as a function (some tools expect this)
-        return Object.assign(selectBuilder, {
-          // Add function callability
-          call: () => selectBuilder,
-          // Ensure all methods return the same structure
-          then: (callback: any) => Promise.resolve(selectBuilder).then(callback)
-        });
-      },
-      insert: (data: any) => ({
-        data: null,
-        error: null,
-        then: (callback: any) => Promise.resolve({ data: null, error: null }).then(callback)
-      }),
-      update: (data: any) => ({
-        data: null,
-        error: null,
-        then: (callback: any) => Promise.resolve({ data: null, error: null }).then(callback)
-      }),
-      delete: () => ({
-        data: null,
-        error: null,
-        then: (callback: any) => Promise.resolve({ data: null, error: null }).then(callback)
-      }),
-      eq: (column: string, value: any) => ({
-        data: [],
-        error: null,
-        single: () => ({
-          data: null,
-          error: null
-        }),
-        then: (callback: any) => Promise.resolve({ data: [], error: null }).then(callback)
-      }),
-      contains: (column: string, value: any) => ({
-        data: [],
-        error: null,
-        then: (callback: any) => Promise.resolve({ data: [], error: null }).then(callback)
-      }),
-      single: () => ({
-        data: null,
-        error: null,
-        then: (callback: any) => Promise.resolve({ data: null, error: null }).then(callback)
-      })
-    };
-    
-    // Make queryBuilder callable as a function
-    return Object.assign(queryBuilder, {
-      call: () => queryBuilder,
-      then: (callback: any) => Promise.resolve(queryBuilder).then(callback)
-    });
-  },
+  // Minimal database interface that just returns empty data
+  from: (table: string) => ({
+    select: () => ({ data: [], error: null }),
+    insert: () => ({ data: null, error: null }),
+    update: () => ({ data: null, error: null }),
+    delete: () => ({ data: null, error: null }),
+    eq: () => ({ data: [], error: null }),
+    contains: () => ({ data: [], error: null }),
+    single: () => ({ data: null, error: null })
+  }),
   
+  // Minimal functions interface
   functions: {
-    invoke: (functionName: string, options: any) => ({
-      data: null,
-      error: null,
-      then: (callback: any) => Promise.resolve({ data: null, error: null }).then(callback)
-    })
+    invoke: () => ({ data: null, error: null })
   },
   
+  // Working authentication system
   auth: {
     signInWithPassword: async ({ email, password }: { email: string; password: string }) => {
       try {
+        console.log('🔐 Attempting login to:', `${API_BASE_URL}/api/auth/login`);
+        
         const response = await apiCall('/api/auth/login', {
           method: 'POST',
           body: JSON.stringify({ email, password })
         });
+        
+        console.log('✅ Login response:', response);
         
         if (response.token) {
           // Store the token
@@ -181,6 +75,7 @@ export const supabase = {
           };
         }
       } catch (error) {
+        console.error('❌ Login error:', error);
         return {
           data: null,
           error: { message: error.message }
@@ -210,19 +105,12 @@ export const supabase = {
       }
     },
     
-    signInWithOtp: async ({ email, options }: { email: string; options?: any }) => {
-      return {
-        data: null,
-        error: null
-      };
-    },
+    signInWithOtp: async () => ({ data: null, error: null }),
     
     signOut: async () => {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('user');
-      return {
-        error: null
-      };
+      return { error: null };
     },
     
     onAuthStateChange: (callback: (event: string, session: any) => void) => {
@@ -265,9 +153,7 @@ export const supabase = {
       }
       
       return {
-        data: {
-          session: null
-        },
+        data: { session: null },
         error: null
       };
     },
@@ -277,17 +163,13 @@ export const supabase = {
       
       if (user) {
         return {
-          data: {
-            user: JSON.parse(user)
-          },
+          data: { user: JSON.parse(user) },
           error: null
         };
       }
       
       return {
-        data: {
-          user: null
-        },
+        data: { user: null },
         error: null
       };
     }
