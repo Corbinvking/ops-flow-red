@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useAirtableData, AIRTABLE_TABLES } from '@/hooks/useAirtableData';
 import InstagramCampaignBuilder from '@/components/instagram/InstagramCampaignBuilder';
+import InstagramDashboard from '@/components/instagram/InstagramDashboard';
 
 type ViewMode = 'operate' | 'data';
 
@@ -315,22 +316,22 @@ const Instagram: React.FC = () => {
             )}
 
             {currentView === 'campaigns' && (
-              <InstagramCampaignBuilder />
+              <InstagramDashboard />
             )}
             {currentView === 'viwBoard' && (
-              <InstagramCampaignBuilder />
+              <InstagramDashboard />
             )}
             {currentView === 'viwAllPosts' && (
-              <InstagramCampaignBuilder />
+              <InstagramDashboard />
             )}
             {currentView === 'viwDueSoon' && (
-              <InstagramCampaignBuilder />
+              <InstagramDashboard />
             )}
             {currentView === 'viwOwnerMe' && (
-              <InstagramCampaignBuilder />
+              <InstagramDashboard />
             )}
             {currentView === 'viwCompleted' && (
-              <InstagramCampaignBuilder />
+              <InstagramDashboard />
             )}
           </div>
         </SidebarInset>

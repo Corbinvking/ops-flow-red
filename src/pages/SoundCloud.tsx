@@ -21,6 +21,7 @@ import {
 import { useAirtableData, AIRTABLE_TABLES } from '@/hooks/useAirtableData';
 import { getStatusColor } from '@/lib/ops';
 import SoundCloudQueueManager from '@/components/soundcloud/SoundCloudQueueManager';
+import SoundCloudDashboard from '@/components/soundcloud/SoundCloudDashboard';
 
 type ViewMode = 'operate' | 'data';
 
@@ -334,31 +335,31 @@ const SoundCloud: React.FC = () => {
             )}
 
             {currentView === 'queue' && (
-              <SoundCloudQueueManager />
+              <SoundCloudDashboard />
             )}
             {currentView === 'viwActiveCampaigns' && (
-              <SoundCloudQueueManager />
+              <SoundCloudDashboard />
             )}
             {currentView === 'viwUpcoming' && (
-              <SoundCloudQueueManager />
+              <SoundCloudDashboard />
             )}
             {currentView === 'viwNoReceipt' && (
-              <SoundCloudQueueManager />
+              <SoundCloudDashboard />
             )}
             {currentView === 'viwNoStartDate' && (
-              <SoundCloudQueueManager />
+              <SoundCloudDashboard />
             )}
             {currentView === 'viwPastMonth' && (
-              <SoundCloudQueueManager />
+              <SoundCloudDashboard />
             )}
             {currentView === 'viwInvoiceNotPaid' && (
-              <SoundCloudQueueManager />
+              <SoundCloudDashboard />
             )}
             {currentView === 'viwAllCampaigns' && (
-              <SoundCloudQueueManager />
+              <SoundCloudDashboard />
             )}
             {currentView === 'viwKanban' && (
-              <SoundCloudQueueManager />
+              <SoundCloudDashboard />
             )}
           </div>
         </SidebarInset>

@@ -1,7 +1,15 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+
+// Mock user and session types
+interface User {
+  id: string;
+  email: string;
+}
+
+interface Session {
+  user: User;
+}
 
 interface Member {
   id: string;
@@ -34,7 +42,7 @@ interface AuthContextType {
   sendMagicLink: (email: string) => Promise<{ error: any }>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -47,197 +55,103 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [userRoles, setUserRoles] = useState<string[]>([]);
-  const [member, setMember] = useState<Member | null>(null);
+  const [loading, setLoading] = useState(false); // Start as false since we're not loading
+  const [userRoles, setUserRoles] = useState<string[]>(['admin']); // Default to admin for demo
+  const [member, setMember] = useState<Member | null>({
+    id: '1',
+    name: 'Demo User',
+    primary_email: 'demo@artistinfluence.com',
+    emails: ['demo@artistinfluence.com'],
+    status: 'active',
+    size_tier: 'premium',
+    monthly_repost_limit: 50,
+    submissions_this_month: 12,
+    net_credits: 150,
+    soundcloud_url: 'https://soundcloud.com/demo',
+    spotify_url: 'https://open.spotify.com/user/demo',
+    families: ['Electronic', 'Hip-Hop'],
+    soundcloud_followers: 5000
+  });
   const { toast } = useToast();
 
   const isAdmin = userRoles.includes('admin');
   const isModerator = userRoles.includes('moderator');
   const isMember = member !== null;
 
-  // Helper function to fetch user roles and member data
-  const fetchUserData = async (userId: string, userEmail: string) => {
-    try {
-      // Fetch user roles
-      const { data: rolesData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId);
-      
-      const roles = rolesData?.map(r => r.role) || [];
-      setUserRoles(roles);
-
-      // Fetch complete member data including all profile fields
-      const { data: memberData } = await supabase
-        .from('members')
-        .select(`
-          id, name, primary_email, emails, status, size_tier, 
-          monthly_repost_limit, submissions_this_month, net_credits,
-          soundcloud_url, spotify_url, families, soundcloud_followers
-        `)
-        .contains('emails', [userEmail])
-        .single();
-      
-      setMember(memberData || null);
-    } catch (error) {
-      console.error('Error fetching user data:', error);
-      setMember(null);
-    }
-  };
-
-  useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Fetch user roles and member data after authentication
-          fetchUserData(session.user.id, session.user.email!);
-        } else {
-          // Clear user data on logout
-          setUserRoles([]);
-          setMember(null);
-        }
-        
-        setLoading(false);
-      }
-    );
-
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        fetchUserData(session.user.id, session.user.email!);
-      }
-      
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
+  // Mock authentication functions
   const signIn = async (email: string, password: string) => {
-    try {
-      // Attempt to sign in first
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        toast({
-          title: "Login Failed",
-          description: error.message,
-          variant: "destructive",
-        });
-        return { error };
-      }
-
-      // After successful sign-in, we'll check authorization in the auth state change handler
-      // The fetchUserData function will get the roles, and if the user has no roles and is not a member,
-      // we can handle that in the UI routing logic
-      
-      toast({
-        title: "Welcome back!",
-        description: "You have been signed in successfully.",
-      });
-
-      return { error: null };
-    } catch (error: any) {
-      toast({
-        title: "Login Failed",
-        description: "An unexpected error occurred.",
-        variant: "destructive",
-      });
-      return { error };
-    }
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Mock successful login
+    const mockUser: User = { id: '1', email };
+    const mockSession: Session = { user: mockUser };
+    
+    setUser(mockUser);
+    setSession(mockSession);
+    
+    toast({
+      title: "Success",
+      description: "Signed in successfully",
+    });
+    
+    return { error: null };
   };
 
   const signUp = async (email: string, password: string) => {
-    try {
-      const redirectUrl = `${window.location.origin}/`;
-      
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: redirectUrl
-        }
-      });
-
-      if (error) {
-        toast({
-          title: "Sign Up Failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Check your email",
-          description: "We've sent you a confirmation link to complete your registration.",
-        });
-      }
-
-      return { error };
-    } catch (error: any) {
-      toast({
-        title: "Sign Up Failed",
-        description: "An unexpected error occurred.",
-        variant: "destructive",
-      });
-      return { error };
-    }
-  };
-
-  const sendMagicLink = async (email: string) => {
-    try {
-      const redirectUrl = `${window.location.origin}/`;
-      
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: redirectUrl
-        }
-      });
-
-      if (error) {
-        toast({
-          title: "Magic Link Failed",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Check your email",
-          description: "We've sent you a magic link to sign in.",
-        });
-      }
-
-      return { error };
-    } catch (error: any) {
-      toast({
-        title: "Magic Link Failed",
-        description: "An unexpected error occurred.",
-        variant: "destructive",
-      });
-      return { error };
-    }
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Mock successful signup
+    const mockUser: User = { id: '1', email };
+    const mockSession: Session = { user: mockUser };
+    
+    setUser(mockUser);
+    setSession(mockSession);
+    
+    toast({
+      title: "Success",
+      description: "Account created successfully",
+    });
+    
+    return { error: null };
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    setUser(null);
+    setSession(null);
+    
     toast({
-      title: "Signed out",
-      description: "You have been signed out successfully.",
+      title: "Success",
+      description: "Signed out successfully",
     });
   };
 
-  const value = {
+  const sendMagicLink = async (email: string) => {
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    toast({
+      title: "Magic Link Sent",
+      description: `Check your email at ${email}`,
+    });
+    
+    return { error: null };
+  };
+
+  // Initialize with mock data for demo purposes
+  useEffect(() => {
+    const mockUser: User = { id: '1', email: 'demo@artistinfluence.com' };
+    const mockSession: Session = { user: mockUser };
+    
+    setUser(mockUser);
+    setSession(mockSession);
+  }, []);
+
+  const value: AuthContextType = {
     user,
     session,
     loading,
@@ -252,5 +166,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     sendMagicLink,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 };

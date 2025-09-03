@@ -19,6 +19,7 @@ import {
 import { useAirtableData, AIRTABLE_TABLES } from '@/hooks/useAirtableData';
 import { useToast } from '@/hooks/use-toast';
 import SpotifyPipelineManager from '@/components/spotify/SpotifyPipelineManager';
+import SpotifyDashboard from '@/components/spotify/SpotifyDashboard';
 import { ViewSidebar } from '@/components/ops/ViewSidebar';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
 
@@ -373,19 +374,19 @@ const Spotify: React.FC = () => {
       )}
 
             {currentView === 'pipeline' && (
-              <SpotifyPipelineManager />
+              <SpotifyDashboard />
             )}
             {currentView === 'viwAll' && (
-              <SpotifyPipelineManager />
+              <SpotifyDashboard />
             )}
             {currentView === 'viwOutreach' && (
-              <SpotifyPipelineManager />
+              <SpotifyDashboard />
             )}
             {currentView === 'viwScheduled' && (
-              <SpotifyPipelineManager />
+              <SpotifyDashboard />
             )}
             {currentView === 'viwPublished' && (
-              <SpotifyPipelineManager />
+              <SpotifyDashboard />
             )}
           </div>
         </SidebarInset>
