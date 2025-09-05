@@ -19,8 +19,10 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { useAirtableData, AIRTABLE_TABLES } from '@/hooks/useAirtableData';
-import InstagramCampaignBuilder from '@/components/instagram/InstagramCampaignBuilder';
 import InstagramDashboard from '@/components/instagram/InstagramDashboard';
+import CampaignManagementDashboard from '@/components/instagram/CampaignManagementDashboard';
+import CreatorManagementTable from '@/components/instagram/CreatorManagementTable';
+import PostPreviewCard from '@/components/instagram/PostPreviewCard';
 
 type ViewMode = 'operate' | 'data';
 
@@ -316,22 +318,113 @@ const Instagram: React.FC = () => {
             )}
 
             {currentView === 'campaigns' && (
-              <InstagramDashboard />
+              <CampaignManagementDashboard />
             )}
             {currentView === 'viwBoard' && (
-              <InstagramDashboard />
+              <CreatorManagementTable />
             )}
             {currentView === 'viwAllPosts' && (
-              <InstagramDashboard />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredPosts.map(post => (
+                  <PostPreviewCard
+                    key={post.id}
+                    post={{
+                      id: post.id,
+                      imageUrl: post.fields['Media URL'],
+                      caption: post.fields['Caption'] || '',
+                      status: post.fields['Status'] || 'draft',
+                      scheduledFor: post.fields['Due Date'],
+                      creator: post.fields['Owner'],
+                      metrics: {
+                        likes: 0,
+                        comments: 0,
+                        shares: 0
+                      }
+                    }}
+                    onAction={handleRecordClick}
+                  />
+                ))}
+              </div>
             )}
             {currentView === 'viwDueSoon' && (
-              <InstagramDashboard />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredPosts
+                  .filter(p => {
+                    const dueDate = new Date(p.fields['Due Date']);
+                    const tomorrow = new Date();
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    return dueDate <= tomorrow;
+                  })
+                  .map(post => (
+                    <PostPreviewCard
+                      key={post.id}
+                      post={{
+                        id: post.id,
+                        imageUrl: post.fields['Media URL'],
+                        caption: post.fields['Caption'] || '',
+                        status: post.fields['Status'] || 'draft',
+                        scheduledFor: post.fields['Due Date'],
+                        creator: post.fields['Owner'],
+                        metrics: {
+                          likes: 0,
+                          comments: 0,
+                          shares: 0
+                        }
+                      }}
+                      onAction={handleRecordClick}
+                    />
+                  ))}
+              </div>
             )}
             {currentView === 'viwOwnerMe' && (
-              <InstagramDashboard />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredPosts
+                  .filter(p => p.fields['Owner'] === 'me')
+                  .map(post => (
+                    <PostPreviewCard
+                      key={post.id}
+                      post={{
+                        id: post.id,
+                        imageUrl: post.fields['Media URL'],
+                        caption: post.fields['Caption'] || '',
+                        status: post.fields['Status'] || 'draft',
+                        scheduledFor: post.fields['Due Date'],
+                        creator: post.fields['Owner'],
+                        metrics: {
+                          likes: 0,
+                          comments: 0,
+                          shares: 0
+                        }
+                      }}
+                      onAction={handleRecordClick}
+                    />
+                  ))}
+              </div>
             )}
             {currentView === 'viwCompleted' && (
-              <InstagramDashboard />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredPosts
+                  .filter(p => p.fields['Status'] === 'done')
+                  .map(post => (
+                    <PostPreviewCard
+                      key={post.id}
+                      post={{
+                        id: post.id,
+                        imageUrl: post.fields['Media URL'],
+                        caption: post.fields['Caption'] || '',
+                        status: post.fields['Status'] || 'draft',
+                        scheduledFor: post.fields['Due Date'],
+                        creator: post.fields['Owner'],
+                        metrics: {
+                          likes: 0,
+                          comments: 0,
+                          shares: 0
+                        }
+                      }}
+                      onAction={handleRecordClick}
+                    />
+                  ))}
+              </div>
             )}
           </div>
         </SidebarInset>
