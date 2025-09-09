@@ -14,7 +14,7 @@ const getApiConfig = (): APIConfig => {
   if (isProduction) {
     return {
       baseURL: 'https://artistinfluence.dpdns.org',
-      airtableBaseURL: 'https://artistinfluence.dpdns.org/airtable',
+      airtableBaseURL: 'https://artistinfluence.dpdns.org',
       timeout: 10000,
     };
   }
@@ -30,7 +30,7 @@ const getApiConfig = (): APIConfig => {
   // Fallback for other environments - always use production URLs
   return {
     baseURL: 'https://artistinfluence.dpdns.org',
-    airtableBaseURL: 'https://artistinfluence.dpdns.org/airtable',
+    airtableBaseURL: 'https://artistinfluence.dpdns.org',
     timeout: 10000,
   };
 };
@@ -178,51 +178,65 @@ class APIClient {
     return this.request(`${this.config.airtableBaseURL}/api/airtable/tables`);
   }
 
+  // Phase 5: Updated Airtable API methods to work with new endpoints
   async getAirtableRecords(tableName: string, params?: Record<string, any>): Promise<any> {
-    const searchParams = new URLSearchParams(params);
-    const url = `${this.config.airtableBaseURL}/api/airtable/records/${tableName}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, String(value));
+        }
+      });
+    }
+    const url = `${this.config.airtableBaseURL}/airtable/${tableName}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
     return this.request(url);
   }
 
   async createAirtableRecord(tableName: string, fields: Record<string, any>): Promise<any> {
-    return this.request(`${this.config.airtableBaseURL}/api/airtable/records/${tableName}`, {
+    return this.request(`${this.config.airtableBaseURL}/airtable/${tableName}`, {
       method: 'POST',
-      body: JSON.stringify({ fields }),
+      body: JSON.stringify({ 
+        records: [{ fields }],
+        typecast: true 
+      }),
     });
   }
 
   async updateAirtableRecord(tableName: string, recordId: string, fields: Record<string, any>): Promise<any> {
-    return this.request(`${this.config.airtableBaseURL}/api/airtable/records/${tableName}/${recordId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ fields }),
+    return this.request(`${this.config.airtableBaseURL}/airtable/${tableName}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ 
+        records: [{ id: recordId, fields }],
+        typecast: true 
+      }),
     });
   }
 
   async deleteAirtableRecord(tableName: string, recordId: string): Promise<void> {
-    return this.request(`${this.config.airtableBaseURL}/api/airtable/records/${tableName}/${recordId}`, {
-      method: 'DELETE',
-    });
+    // Note: Delete not implemented in Phase 5 API for security
+    throw new Error('Delete operations not supported in Phase 5 API');
   }
 
   async searchAirtableRecords(tableName: string, query: string): Promise<any> {
-    return this.request(`${this.config.airtableBaseURL}/api/airtable/search/${tableName}?q=${encodeURIComponent(query)}`);
+    // Use filterByFormula for search functionality
+    return this.request(`${this.config.airtableBaseURL}/airtable/${tableName}?filterByFormula=${encodeURIComponent(query)}`);
   }
 
   async getAirtableStats(tableName?: string): Promise<any> {
-    const url = tableName 
-      ? `${this.config.airtableBaseURL}/api/airtable/stats/${tableName}`
-      : `${this.config.airtableBaseURL}/api/airtable/stats`;
+    // Phase 5: Use the metrics endpoint for stats
+    const url = `${this.config.airtableBaseURL}/metrics`;
     return this.request(url);
   }
 
   async syncAirtableTable(tableName: string): Promise<any> {
-    return this.request(`${this.config.airtableBaseURL}/api/airtable/sync/${tableName}`, {
+    return this.request(`${this.config.airtableBaseURL}/sync/trigger`, {
       method: 'POST',
+      body: JSON.stringify({ table: tableName }),
     });
   }
 
-  async getAirtableSyncStatus(tableName: string): Promise<any> {
-    return this.request(`${this.config.airtableBaseURL}/api/airtable/sync-status/${tableName}`);
+  async getAirtableSyncStatus(tableName?: string): Promise<any> {
+    return this.request(`${this.config.airtableBaseURL}/sync/status`);
   }
 
   // Health checks
@@ -231,7 +245,7 @@ class APIClient {
   }
 
   async checkAirtableHealth(): Promise<any> {
-    return this.request(`${this.config.airtableBaseURL}/health`);
+    return this.request(`${this.config.baseURL}/health/airtable`);
   }
 }
 
