@@ -1,212 +1,403 @@
-import { useState, useEffect, useCallback } from 'react';
-import { api } from '../lib/api';
-import { useToast } from './use-toast';
+import { useState, useEffect, useCallback, useContext } from 'react';
+import { api } from '@/lib/api';
+import { AuthContext } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
-// Airtable table names mapping - Only include tables that actually exist in Airtable
-export const AIRTABLE_TABLES = {
-  // Use youtube as the main campaign tracker since campaign_tracker_2025 doesn't exist
-  CAMPAIGN_TRACKER: 'youtube',
-  YOUTUBE: 'youtube',
-  SOUNDCLOUD: 'soundcloud',
-  INSTAGRAM: 'ig seeding', // Use the original name that has tableId
-  SPOTIFY: 'spotify playlisting', // Use the original name that has tableId
-  SPOTIFY_PLAYLISTING: 'spotify playlisting', // Use the original name that has tableId
-  INSTAGRAM_SEEDING: 'ig seeding', // Use the original name that has tableId
-  TIKTOK_UGC: 'tiktok ugc', // Use the original name that has tableId
-  SOUNDCLOUD_PLAYLISTING: 'soundcloud playlisting', // Use the original name that has tableId
-  SALESPEOPLE: 'salespeople',
-  VENDORS: 'vendors',
-  INVOICE_REQUESTS: 'invoice requests', // Use the original name that has tableId
-  INVOICES: 'invoices',
-} as const;
-
-export type AirtableTableName = typeof AIRTABLE_TABLES[keyof typeof AIRTABLE_TABLES];
-
-interface UseAirtableDataOptions {
-  tableName: AirtableTableName;
-  autoRefresh?: boolean;
-  refreshInterval?: number;
-  params?: Record<string, any>;
+// Types for Airtable data
+export interface AirtableRecord {
+  id: string;
+  fields: Record<string, any>;
+  createdTime: string;
 }
 
-export const useAirtableData = (options: UseAirtableDataOptions) => {
-  const { tableName, autoRefresh = false, refreshInterval = 30000, params } = options;
-  const [data, setData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [stats, setStats] = useState<any>(null);
-  const { toast } = useToast();
+export interface AirtableResponse {
+  success: boolean;
+  records: AirtableRecord[];
+  offset?: string;
+  table: string;
+  count: number;
+  hasMore: boolean;
+}
 
-  const fetchData = useCallback(async () => {
+export interface AirtableListParams {
+  pageSize?: number;
+  offset?: string;
+  view?: string;
+  filterByFormula?: string;
+  fields?: string[];
+}
+
+export interface AirtableCreateData {
+  records: Array<{
+    fields: Record<string, any>;
+  }>;
+  typecast?: boolean;
+}
+
+export interface AirtableUpdateData {
+  records: Array<{
+    id: string;
+    fields: Record<string, any>;
+  }>;
+  typecast?: boolean;
+}
+
+// Table configurations matching our Phase 5 API
+export const AIRTABLE_TABLES = {
+  spotify: {
+    name: 'spotify',
+    displayName: 'Spotify Playlisting',
+    readFields: ['Campaign', 'Start Date', 'URL', 'Client', 'Name (from Clients)', 'Goal', 'Salesperson', 'Status', 'Vendor', 'Sale price', 'Invoice', 'Ask For SFA', 'Email (from Client)', 'Name (from Client)', 'Client Email', 'Vendor Email'],
+    writeFields: ['Campaign', 'Start Date', 'URL', 'Goal', 'Status', 'Sale price', 'Invoice'],
+    requiredRoles: ['admin', 'manager']
+  },
+  instagram: {
+    name: 'instagram',
+    displayName: 'Instagram Seeding',
+    readFields: [], // Use all available fields from Airtable
+    writeFields: ['Campaign', 'Spend', 'Status', 'Remaining', 'Start Date', 'Price', 'Invoice'],
+    requiredRoles: ['admin', 'manager']
+  },
+  soundcloud: {
+    name: 'soundcloud',
+    displayName: 'SoundCloud',
+    readFields: [], // Use all available fields from Airtable
+    writeFields: ['Campaign', 'Spend', 'Status', 'Remaining', 'Start Date', 'Price', 'Invoice'],
+    requiredRoles: ['admin', 'manager']
+  },
+  youtube: {
+    name: 'youtube',
+    displayName: 'YouTube Analytics',
+    readFields: [], // Use all available fields from Airtable
+    writeFields: ['Campaign', 'Service Type', 'Goal', 'Remaining', 'URL', 'Start Date', 'Status', 'Sale Price', 'Comments'],
+    requiredRoles: ['admin', 'manager']
+  }
+} as const;
+
+export type AirtableTableName = keyof typeof AIRTABLE_TABLES;
+
+// Main hook for Airtable data operations
+export const useAirtableData = (tableName: AirtableTableName) => {
+  const [data, setData] = useState<AirtableRecord[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [offset, setOffset] = useState<string | undefined>();
+  const [totalCount, setTotalCount] = useState(0);
+  
+  const { toast } = useToast();
+  const { user } = useContext(AuthContext);
+  
+  const tableConfig = AIRTABLE_TABLES[tableName];
+  
+  // Check if user has permission for this table
+  const hasReadPermission = user?.role && ['admin', 'manager', 'viewer'].includes(user.role);
+  const hasWritePermission = user?.role && tableConfig.requiredRoles.includes(user.role as any);
+
+  // Fetch records with pagination
+  const fetchRecords = useCallback(async (params: AirtableListParams = {}) => {
+    if (!hasReadPermission) {
+      setError('Insufficient permissions to read this table');
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
       
-      const [recordsResponse, statsResponse] = await Promise.all([
-        api.airtable.getRecords(tableName, params),
-        api.airtable.getStats(tableName)
-      ]);
+      const response = await api.airtable.getRecords(tableName, {
+        pageSize: params.pageSize || 50,
+        offset: params.offset,
+        view: params.view || (tableConfig.readFields.length > 0 ? tableConfig.readFields.join(',') : undefined),
+        filterByFormula: params.filterByFormula,
+        fields: params.fields || (tableConfig.readFields.length > 0 ? tableConfig.readFields : undefined)
+      });
 
-      setData(recordsResponse.records || []);
-      setStats(statsResponse);
+      if (response.success) {
+        setData(response.records);
+        setHasMore(response.hasMore);
+        setOffset(response.offset);
+        setTotalCount(response.count);
+      } else {
+        throw new Error(response.error || 'Failed to fetch records');
+      }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch data';
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch records';
       setError(errorMessage);
       toast({
-        title: 'Error loading data',
-        description: errorMessage,
+        title: 'Error',
+        description: `Failed to fetch ${tableConfig.displayName} data: ${errorMessage}`,
         variant: 'destructive',
       });
     } finally {
       setLoading(false);
     }
-  }, [tableName, params, toast]);
+  }, [tableName, hasReadPermission, toast, tableConfig]);
 
-  const createRecord = useCallback(async (fields: Record<string, any>) => {
+  // Load more records (pagination)
+  const loadMore = useCallback(async () => {
+    if (!hasMore || !offset || loading) return;
+
     try {
-      const result = await api.airtable.createRecord(tableName, fields);
-      setData(prev => [...prev, result]);
-      toast({
-        title: 'Record created',
-        description: 'New record has been created successfully.',
+      setLoading(true);
+      const response = await api.airtable.getRecords(tableName, {
+        pageSize: 50,
+        offset,
+        view: tableConfig.readFields.length > 0 ? tableConfig.readFields.join(',') : undefined,
+        fields: tableConfig.readFields.length > 0 ? tableConfig.readFields : undefined
       });
-      return result;
+
+      if (response.success) {
+        setData(prev => [...prev, ...response.records]);
+        setHasMore(response.hasMore);
+        setOffset(response.offset);
+        setTotalCount(prev => prev + response.count);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load more records';
+      toast({
+        title: 'Error',
+        description: `Failed to load more ${tableConfig.displayName} data: ${errorMessage}`,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [tableName, hasMore, offset, loading, toast, tableConfig]);
+
+  // Create new record
+  const createRecord = useCallback(async (fields: Record<string, any>) => {
+    if (!hasWritePermission) {
+      toast({
+        title: 'Access Denied',
+        description: `You don't have permission to create records in ${tableConfig.displayName}`,
+        variant: 'destructive',
+      });
+      return null;
+    }
+
+    try {
+      setLoading(true);
+      const response = await api.airtable.createRecord(tableName, fields);
+      
+      if (response.success) {
+        // Add new record to the beginning of the list
+        setData(prev => [response.records[0], ...prev]);
+        setTotalCount(prev => prev + 1);
+        
+        toast({
+          title: 'Success',
+          description: `Record created in ${tableConfig.displayName}`,
+        });
+        
+        return response.records[0];
+      } else {
+        throw new Error(response.error || 'Failed to create record');
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create record';
       toast({
-        title: 'Error creating record',
-        description: errorMessage,
+        title: 'Error',
+        description: `Failed to create record in ${tableConfig.displayName}: ${errorMessage}`,
         variant: 'destructive',
       });
-      throw err;
+      return null;
+    } finally {
+      setLoading(false);
     }
-  }, [tableName, toast]);
+  }, [tableName, hasWritePermission, toast, tableConfig]);
 
+  // Update existing record
   const updateRecord = useCallback(async (recordId: string, fields: Record<string, any>) => {
-    try {
-      const result = await api.airtable.updateRecord(tableName, recordId, fields);
-      setData(prev => prev.map(item => 
-        item.id === recordId ? { ...item, ...result } : item
-      ));
+    if (!hasWritePermission) {
       toast({
-        title: 'Record updated',
-        description: 'Record has been updated successfully.',
+        title: 'Access Denied',
+        description: `You don't have permission to update records in ${tableConfig.displayName}`,
+        variant: 'destructive',
       });
-      return result;
+      return null;
+    }
+
+    try {
+      setLoading(true);
+      const response = await api.airtable.updateRecord(tableName, recordId, fields);
+      
+      if (response.success) {
+        // Update record in the list
+        setData(prev => prev.map(record => 
+          record.id === recordId 
+            ? { ...record, fields: { ...record.fields, ...fields } }
+            : record
+        ));
+        
+        toast({
+          title: 'Success',
+          description: `Record updated in ${tableConfig.displayName}`,
+        });
+        
+        return response.records[0];
+      } else {
+        throw new Error(response.error || 'Failed to update record');
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update record';
       toast({
-        title: 'Error updating record',
-        description: errorMessage,
+        title: 'Error',
+        description: `Failed to update record in ${tableConfig.displayName}: ${errorMessage}`,
         variant: 'destructive',
       });
-      throw err;
-    }
-  }, [tableName, toast]);
-
-  const deleteRecord = useCallback(async (recordId: string) => {
-    try {
-      await api.airtable.deleteRecord(tableName, recordId);
-      setData(prev => prev.filter(item => item.id !== recordId));
-      toast({
-        title: 'Record deleted',
-        description: 'Record has been deleted successfully.',
-      });
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete record';
-      toast({
-        title: 'Error deleting record',
-        description: errorMessage,
-        variant: 'destructive',
-      });
-      throw err;
-    }
-  }, [tableName, toast]);
-
-  const searchRecords = useCallback(async (query: string) => {
-    try {
-      setLoading(true);
-      const result = await api.airtable.searchRecords(tableName, query);
-      setData(result.records || []);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to search records';
-      setError(errorMessage);
-      toast({
-        title: 'Search error',
-        description: errorMessage,
-        variant: 'destructive',
-      });
+      return null;
     } finally {
       setLoading(false);
     }
-  }, [tableName, toast]);
+  }, [tableName, hasWritePermission, toast, tableConfig]);
 
-  const syncTable = useCallback(async () => {
-    try {
-      setLoading(true);
-      await api.airtable.syncTable(tableName);
-      await fetchData(); // Refresh data after sync
-      toast({
-        title: 'Table synced',
-        description: 'Table has been synchronized with Airtable.',
-      });
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to sync table';
-      toast({
-        title: 'Sync error',
-        description: errorMessage,
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
+  // Refresh data
+  const refresh = useCallback(() => {
+    fetchRecords();
+  }, [fetchRecords]);
+
+  // Auto-fetch on mount
+  useEffect(() => {
+    if (hasReadPermission) {
+      fetchRecords();
     }
-  }, [tableName, fetchData, toast]);
-
-  // Initial data fetch
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  // Auto-refresh setup
-  useEffect(() => {
-    if (!autoRefresh) return;
-
-    const interval = setInterval(fetchData, refreshInterval);
-    return () => clearInterval(interval);
-  }, [autoRefresh, refreshInterval, fetchData]);
+  }, [fetchRecords, hasReadPermission]);
 
   return {
     data,
     loading,
     error,
-    stats,
-    refetch: fetchData,
+    hasMore,
+    totalCount,
+    hasReadPermission,
+    hasWritePermission,
+    tableConfig,
+    fetchRecords,
+    loadMore,
     createRecord,
     updateRecord,
-    deleteRecord,
-    searchRecords,
-    syncTable,
+    refresh
   };
 };
 
-// Specialized hooks for specific tables
-export const useCampaignData = (params?: Record<string, any>) => 
-  useAirtableData({ tableName: AIRTABLE_TABLES.CAMPAIGN_TRACKER, params });
+// Hook for specific table data with common patterns
+export const useSpotifyData = () => useAirtableData('spotify');
+export const useInstagramData = () => useAirtableData('instagram');
+export const useSoundCloudData = () => useAirtableData('soundcloud');
+export const useYouTubeData = () => useAirtableData('youtube');
 
-export const useYouTubeData = (params?: Record<string, any>) => 
-  useAirtableData({ tableName: AIRTABLE_TABLES.YOUTUBE, params });
+// Hook for Airtable health and sync status
+export const useAirtableHealth = () => {
+  const [health, setHealth] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
-export const useSoundCloudData = (params?: Record<string, any>) => 
-  useAirtableData({ tableName: AIRTABLE_TABLES.SOUNDCLOUD, params });
+  const checkHealth = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await api.health.airtable();
+      setHealth(response);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to check Airtable health';
+      setError(errorMessage);
+      toast({
+        title: 'Health Check Failed',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
 
-export const useSpotifyData = (params?: Record<string, any>) => 
-  useAirtableData({ tableName: AIRTABLE_TABLES.SPOTIFY, params });
+  useEffect(() => {
+    checkHealth();
+  }, [checkHealth]);
 
-export const useInstagramData = (params?: Record<string, any>) => 
-  useAirtableData({ tableName: AIRTABLE_TABLES.INSTAGRAM, params });
+  return {
+    health,
+    loading,
+    error,
+    checkHealth
+  };
+};
 
-export const useInvoiceData = (params?: Record<string, any>) => 
-  useAirtableData({ tableName: AIRTABLE_TABLES.INVOICES, params });
+// Hook for sync operations (admin only)
+export const useAirtableSync = () => {
+  const [syncStatus, setSyncStatus] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
+  const { user } = useContext(AuthContext);
 
-export const useInvoiceRequestsData = (params?: Record<string, any>) => 
-  useAirtableData({ tableName: AIRTABLE_TABLES.INVOICE_REQUESTS, params });
+  const isAdmin = user?.role === 'admin';
+
+  const fetchSyncStatus = useCallback(async () => {
+    if (!isAdmin) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await api.airtable.getSyncStatus();
+      if (response.success) {
+        setSyncStatus(response.syncStatus);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch sync status';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [isAdmin]);
+
+  const triggerSync = useCallback(async (tableName?: string) => {
+    if (!isAdmin) {
+      toast({
+        title: 'Access Denied',
+        description: 'Only administrators can trigger sync operations',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await api.airtable.syncTable(tableName || '');
+      if (response.success) {
+        toast({
+          title: 'Sync Triggered',
+          description: `Sync started for ${tableName || 'all tables'}`,
+        });
+        // Refresh sync status after a short delay
+        setTimeout(fetchSyncStatus, 2000);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to trigger sync';
+      toast({
+        title: 'Sync Failed',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [isAdmin, toast, fetchSyncStatus]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchSyncStatus();
+    }
+  }, [fetchSyncStatus, isAdmin]);
+
+  return {
+    syncStatus,
+    loading,
+    error,
+    isAdmin,
+    fetchSyncStatus,
+    triggerSync
+  };
+};

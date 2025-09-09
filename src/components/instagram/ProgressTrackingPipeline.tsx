@@ -11,8 +11,7 @@ import {
   ArrowRight,
   TrendingUp
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useAirtableData, AIRTABLE_TABLES } from '@/hooks/useAirtableData';
 
 interface PipelineStage {
   id: string;
@@ -25,29 +24,12 @@ interface PipelineStage {
 }
 
 export const ProgressTrackingPipeline = () => {
-  // Fetch campaign creators data
-  const { data: campaignCreators = [], isLoading } = useQuery({
-    queryKey: ['pipeline-progress'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('campaign_creators')
-        .select(`
-          id,
-          payment_status,
-          post_status,
-          approval_status,
-          campaigns!inner(name, status)
-        `)
-        .eq('campaigns.status', 'active');
-      
-      if (error) throw error;
-      return data || [];
-    }
-  });
+  // Fetch campaign data from Airtable
+  const { data: posts = [], isLoading } = useAirtableData({ tableName: AIRTABLE_TABLES.INSTAGRAM });
 
   // Calculate pipeline stages
   const pipelineStages = useMemo((): PipelineStage[] => {
-    const total = campaignCreators.length;
+    const total = posts.length;
     
     if (total === 0) {
       return [
@@ -100,26 +82,24 @@ export const ProgressTrackingPipeline = () => {
     }
 
     // Count items in each stage
-    const draftCount = campaignCreators.filter(c => 
-      c.post_status === 'not_posted' && c.payment_status === 'unpaid'
+    const draftCount = posts.filter(p => 
+      p.fields['Status'] === 'backlog'
     ).length;
     
-    const outreachCount = campaignCreators.filter(c => 
-      c.post_status === 'not_posted' && c.approval_status === 'pending'
+    const outreachCount = posts.filter(p => 
+      p.fields['Status'] === 'in_progress' && !p.fields['Scheduled Date']
     ).length;
     
-    const scheduledCount = campaignCreators.filter(c => 
-      c.post_status === 'scheduled'
+    const scheduledCount = posts.filter(p => 
+      p.fields['Status'] === 'in_progress' && p.fields['Scheduled Date']
     ).length;
     
-    const postedCount = campaignCreators.filter(c => 
-      c.post_status === 'posted' && c.approval_status !== 'approved'
+    const postedCount = posts.filter(p => 
+      p.fields['Status'] === 'needs_qa'
     ).length;
     
-    const completedCount = campaignCreators.filter(c => 
-      c.post_status === 'posted' && 
-      c.approval_status === 'approved' && 
-      c.payment_status === 'paid'
+    const completedCount = posts.filter(p => 
+      p.fields['Status'] === 'done'
     ).length;
 
     return [
@@ -169,21 +149,16 @@ export const ProgressTrackingPipeline = () => {
         color: 'text-success'
       }
     ];
-  }, [campaignCreators]);
+  }, [posts]);
 
   // Calculate overall progress
   const overallProgress = useMemo(() => {
-    const total = campaignCreators.length;
+    const total = posts.length;
     if (total === 0) return 0;
     
-    const completed = campaignCreators.filter(c => 
-      c.post_status === 'posted' && 
-      c.approval_status === 'approved' && 
-      c.payment_status === 'paid'
-    ).length;
-    
+    const completed = posts.filter(p => p.fields['Status'] === 'done').length;
     return (completed / total) * 100;
-  }, [campaignCreators]);
+  }, [posts]);
 
   if (isLoading) {
     return (
@@ -215,7 +190,7 @@ export const ProgressTrackingPipeline = () => {
           <TrendingUp className="h-5 w-5 text-primary" />
           Campaign Progress Pipeline
           <Badge variant="outline" className="ml-auto">
-            {campaignCreators.length} active items
+            {posts.length} active items
           </Badge>
         </CardTitle>
       </CardHeader>
@@ -279,7 +254,7 @@ export const ProgressTrackingPipeline = () => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             <div>
               <div className="text-lg font-semibold text-primary">
-                {campaignCreators.length}
+                {posts.length}
               </div>
               <div className="text-xs text-muted-foreground">Total Active</div>
             </div>

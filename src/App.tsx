@@ -14,6 +14,7 @@ import Spotify from "./pages/Spotify";
 import Visualizer from "./pages/Visualizer";
 import Settings from "./pages/Settings";
 import DealFlow from "./pages/DealFlow";
+import AirtableTestPage from "./pages/AirtableTestPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const AuthenticatedApp = () => {
           <Route path="dealflow" element={<DealFlow />} />
           <Route path="visualizer" element={<Visualizer />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="airtable-test" element={<AirtableTestPage />} />
         </Route>
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />

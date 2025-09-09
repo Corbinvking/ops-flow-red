@@ -9,7 +9,8 @@ import {
   Palette,
   Settings,
   Badge,
-  Handshake
+  Handshake,
+  Database
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -29,6 +30,7 @@ const navItems: NavItem[] = [
   { id: 'spotify', label: 'Spotify', icon: Music, path: '/spotify', badge: 5 },
   { id: 'dealflow', label: 'Deal Flow', icon: Handshake, path: '/dealflow' },
   { id: 'visualizer', label: 'Visualizer', icon: Palette, path: '/visualizer' },
+  { id: 'airtable-test', label: 'Airtable Test', icon: Database, path: '/airtable-test' },
   { id: 'settings', label: 'Settings', icon: Settings, path: '/settings' },
 ];
 

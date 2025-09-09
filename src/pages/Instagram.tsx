@@ -1,450 +1,169 @@
 import React, { useState } from 'react';
-import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
-import { ViewSidebar } from '@/components/ops/ViewSidebar';
-import { Toolbar } from '@/components/ops/Toolbar';
-import { KanbanBoard } from '@/components/ops/KanbanBoard';
-import { DataTable } from '@/components/ops/DataTable';
-import { BulkBar } from '@/components/ops/BulkBar';
-import { RecordDrawer } from '@/components/ops/RecordDrawer';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Plus, 
-  Upload, 
-  Download, 
-  Zap,
-  Calendar,
-  User,
-  AlertTriangle
-} from 'lucide-react';
-import { useAirtableData, AIRTABLE_TABLES } from '@/hooks/useAirtableData';
-import InstagramDashboard from '@/components/instagram/InstagramDashboard';
-import CampaignManagementDashboard from '@/components/instagram/CampaignManagementDashboard';
-import CreatorManagementTable from '@/components/instagram/CreatorManagementTable';
-import PostPreviewCard from '@/components/instagram/PostPreviewCard';
+import { Button } from "@/components/ui/button";
+import { Search, HelpCircle, Target, Users, BarChart3, Zap, Plus } from "lucide-react";
+import InstagramNav from '@/components/instagram/InstagramNav';
+import CampaignBuilder from '@/components/instagram/CampaignBuilder';
+import CreatorDatabase from '@/components/instagram/CreatorDatabase';
+import CampaignManagement from '@/components/instagram/CampaignManagement';
+import TargetingTools from '@/components/instagram/TargetingTools';
 
-type ViewMode = 'operate' | 'data';
-
-const Instagram: React.FC = () => {
-  const [viewMode, setViewMode] = useState<ViewMode>('operate');
+const Instagram = () => {
   const [currentView, setCurrentView] = useState('overview');
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [selectedRecord, setSelectedRecord] = useState<any>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState('');
-  const [ownerFilter, setOwnerFilter] = useState('');
-  const [priorityFilter, setPriorityFilter] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
 
-  const { data: posts, loading, updateRecord, error } = useAirtableData({ tableName: AIRTABLE_TABLES.INSTAGRAM });
-
-  const filteredPosts = posts.filter(post => {
-    const matchesSearch = !searchValue || 
-      post.fields['Caption']?.toLowerCase().includes(searchValue.toLowerCase());
-    const matchesOwner = !ownerFilter || post.fields['Owner'] === ownerFilter;
-    const matchesPriority = !priorityFilter || post.fields['Priority'] === priorityFilter;
-    
-    return matchesSearch && matchesOwner && matchesPriority;
-  });
-
-  const kanbanColumns = [
-    {
-      id: 'backlog',
-      title: 'Backlog',
-      items: filteredPosts.filter(p => p.fields['Status'] === 'backlog'),
-      color: 'chip'
-    },
-    {
-      id: 'in_progress',
-      title: 'In Progress',
-      items: filteredPosts.filter(p => p.fields['Status'] === 'in_progress'),
-      color: 'chip-warning'
-    },
-    {
-      id: 'needs_qa',
-      title: 'Needs QA',
-      items: filteredPosts.filter(p => p.fields['Status'] === 'needs_qa'),
-      color: 'chip-danger'
-    },
-    {
-      id: 'done',
-      title: 'Done',
-      items: filteredPosts.filter(p => p.fields['Status'] === 'done'),
-      color: 'chip-success'
-    }
-  ];
-
-  const tableColumns = [
-    { 
-      key: 'Caption', 
-      label: 'Caption', 
-      sortable: true,
-      render: (value: any, item: any) => (
-        <div className="max-w-xs">
-          <p className="line-clamp-2 text-sm">{item.fields['Caption'] || '-'}</p>
-        </div>
-      )
-    },
-    { 
-      key: 'Media URL', 
-      label: 'Media', 
-      render: (value: any, item: any) => (
-        <img src={item.fields['Media URL']} alt="Post" className="w-12 h-12 object-cover rounded" />
-      )
-    },
-    { 
-      key: 'Owner', 
-      label: 'Owner', 
-      sortable: true,
-      render: (value: any, item: any) => item.fields['Owner'] || '-'
-    },
-    { 
-      key: 'Status', 
-      label: 'Status', 
-      sortable: true,
-      render: (value: any, item: any) => item.fields['Status'] || '-'
-    },
-    { 
-      key: 'Priority', 
-      label: 'Priority', 
-      sortable: true,
-      render: (value: any, item: any) => item.fields['Priority'] || '-'
-    },
-    { 
-      key: 'Due Date', 
-      label: 'Due Date', 
-      sortable: true,
-      render: (value: any, item: any) => item.fields['Due Date'] || '-'
-    }
-  ];
-
-  const handleStatusChange = (itemId: string, newStatus: string) => {
-    updateRecord(itemId, { 'Status': newStatus });
-  };
-
-  const handleBulkAction = (action: string, value?: any) => {
-    const updates: any = {};
-    
-    switch (action) {
-      case 'set_status':
-        updates['Status'] = value;
-        break;
-      case 'assign_owner':
-        updates['Owner'] = value;
-        break;
-      case 'trigger_final_report':
-        updates['Send Final Report'] = true;
-        break;
-    }
-
-    // Update each selected record
-    selectedIds.forEach(id => {
-      updateRecord(id, updates);
-    });
-    setSelectedIds([]);
-  };
-
-  const handleRecordClick = (record: any) => {
-    setSelectedRecord(record);
-    setDrawerOpen(true);
-  };
-
-  const handleRecordSave = (updates: any) => {
-    if (selectedRecord) {
-      updateRecord(selectedRecord.id, updates);
-    }
-  };
-
-  const viewCounts = {
-    viwBoard: posts.length,
-    viwAllPosts: posts.length,
-    viwDueSoon: posts.filter(p => {
-      const dueDate = new Date(p.fields['Due Date']);
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      return dueDate <= tomorrow;
-    }).length,
-    viwCompleted: posts.filter(p => p.fields['Status'] === 'done').length
-  };
-
-  const owners = [...new Set(posts.map(p => p.fields['Owner']).filter(Boolean))];
-  const priorities = ['high', 'medium', 'low'];
-
-  if (loading) {
+  if (currentView === 'campaign-builder') {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading posts...</p>
-        </div>
+      <div>
+        <InstagramNav currentView={currentView} onViewChange={setCurrentView} />
+        <CampaignBuilder />
+      </div>
+    );
+  }
+
+  if (currentView === 'creators') {
+    return (
+      <div>
+        <InstagramNav currentView={currentView} onViewChange={setCurrentView} />
+        <CreatorDatabase />
+      </div>
+    );
+  }
+
+  if (currentView === 'campaigns') {
+    return (
+      <div>
+        <InstagramNav currentView={currentView} onViewChange={setCurrentView} />
+        <CampaignManagement />
+      </div>
+    );
+  }
+
+  if (currentView === 'targeting') {
+    return (
+      <div>
+        <InstagramNav currentView={currentView} onViewChange={setCurrentView} />
+        <TargetingTools />
       </div>
     );
   }
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full">
-        <ViewSidebar
-          service="ig"
-          currentView={currentView}
-          onViewChange={setCurrentView}
-          viewCounts={viewCounts}
-        />
-        
-        <SidebarInset>
-          <div className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
-            <div className="flex h-14 items-center gap-4 px-6">
-              <SidebarTrigger />
-              <div className="flex-1" />
+    <div>
+      <InstagramNav currentView={currentView} onViewChange={setCurrentView} />
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-6 py-12">
+          {/* Header */}
+          <div className="text-center mb-16">
+            <div className="flex justify-end mb-4 gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsSearchOpen(true)}
+                className="flex items-center gap-2"
+              >
+                <Search className="h-4 w-4" />
+                Search
+                <kbd className="px-1.5 py-0.5 text-xs font-semibold text-muted-foreground bg-muted border border-border rounded">
+                  Ctrl+K
+                </kbd>
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsHelpOpen(true)}
+              >
+                <HelpCircle className="h-4 w-4" />
+              </Button>
+            </div>
+            <h1 className="text-6xl font-bebas text-gradient mb-6 tracking-wider">
+              INSTAGRAM SEEDING
+            </h1>
+            <h2 className="text-4xl font-bebas text-foreground mb-4 tracking-wide">
+              CAMPAIGN BUILDER
+            </h2>
+            <div className="w-24 h-1 bg-gradient-to-r from-[#E1306C] to-[#E1306C]/60 mx-auto mb-6"></div>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto font-mono">
+              &gt; Internal operator dashboard for campaign management and creator analytics
+            </p>
+          </div>
+
+          {/* Main Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16">
+            <Button
+              className="bg-[#E1306C] hover:bg-[#E1306C]/90 text-white h-14 px-8 text-lg"
+              onClick={() => setCurrentView('campaign-builder')}
+            >
+              <Plus className="h-5 w-5 mr-2" />
+              BUILD CAMPAIGN
+            </Button>
+            <Button
+              variant="outline"
+              className="h-14 px-8 text-lg border-[#E1306C]/20 hover:bg-[#E1306C]/10"
+              onClick={() => setCurrentView('creators')}
+            >
+              <Users className="h-5 w-5 mr-2" />
+              BROWSE CREATORS
+            </Button>
+            <Button
+              variant="outline"
+              className="h-14 px-8 text-lg border-[#E1306C]/20 hover:bg-[#E1306C]/10"
+              onClick={() => setCurrentView('campaigns')}
+            >
+              <BarChart3 className="h-5 w-5 mr-2" />
+              VIEW CAMPAIGNS
+            </Button>
+          </div>
+
+          {/* Feature Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto">
+            <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-black to-zinc-900 p-6 border border-white/10">
+              <div className="absolute inset-0 bg-gradient-to-br from-[#E1306C]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="flex items-center justify-center w-12 h-12 bg-[#E1306C]/20 rounded-lg mb-4">
+                <Zap className="h-6 w-6 text-[#E1306C]" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">Smart Algorithms</h3>
+              <p className="text-zinc-400">
+                AI-powered creator matching based on genre, territory, and performance data
+              </p>
+            </div>
+
+            <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-black to-zinc-900 p-6 border border-white/10">
+              <div className="absolute inset-0 bg-gradient-to-br from-[#E1306C]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="flex items-center justify-center w-12 h-12 bg-[#E1306C]/20 rounded-lg mb-4">
+                <Target className="h-6 w-6 text-[#E1306C]" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">Budget Optimization</h3>
+              <p className="text-zinc-400">
+                Maximize reach within budget using cost-per-view analysis and efficiency scoring
+              </p>
+            </div>
+
+            <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-black to-zinc-900 p-6 border border-white/10">
+              <div className="absolute inset-0 bg-gradient-to-br from-[#E1306C]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="flex items-center justify-center w-12 h-12 bg-[#E1306C]/20 rounded-lg mb-4">
+                <Users className="h-6 w-6 text-[#E1306C]" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">Creator Database</h3>
+              <p className="text-zinc-400">
+                Performance tracking and analytics for continuous algorithm improvement
+              </p>
+            </div>
+
+            <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-black to-zinc-900 p-6 border border-white/10">
+              <div className="absolute inset-0 bg-gradient-to-br from-[#E1306C]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="flex items-center justify-center w-12 h-12 bg-[#E1306C]/20 rounded-lg mb-4">
+                <BarChart3 className="h-6 w-6 text-[#E1306C]" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">Campaign Analytics</h3>
+              <p className="text-zinc-400">
+                Track actual performance vs predictions to improve future recommendations
+              </p>
             </div>
           </div>
-
-          <div className="p-6 space-y-6">
-            {currentView === 'overview' && (
-              <>
-                <Toolbar
-                  title="Instagram Content"
-                  description="Manage Instagram posts and content pipeline"
-                  mode={viewMode}
-                  onModeChange={setViewMode}
-                  searchValue={searchValue}
-                  onSearchChange={setSearchValue}
-                  recordCount={filteredPosts.length}
-                  selectedCount={selectedIds.length}
-                  filters={[
-                    {
-                      key: 'owner',
-                      label: 'Owner',
-                      value: ownerFilter,
-                      options: owners.map(owner => ({ value: owner, label: owner })),
-                      onChange: setOwnerFilter
-                    },
-                    {
-                      key: 'priority',
-                      label: 'Priority',
-                      value: priorityFilter,
-                      options: priorities.map(priority => ({ value: priority, label: priority })),
-                      onChange: setPriorityFilter
-                    }
-                  ]}
-                  actions={[
-                    { label: 'New Post', icon: Plus, onClick: () => {} },
-                    { label: 'Upload Assets', icon: Upload, onClick: () => {}, variant: 'outline' }
-                  ]}
-                />
-
-                {viewMode === 'operate' ? (
-              <div className="space-y-6">
-                {/* Automation Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Card className="card-glow">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="flex items-center gap-2 text-base">
-                        <Zap className="h-5 w-5 text-primary" />
-                        Final Report Automation
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        Trigger final report automation for completed posts
-                      </p>
-                      <Button 
-                        size="sm" 
-                        disabled={selectedIds.length === 0}
-                        onClick={() => handleBulkAction('trigger_final_report')}
-                      >
-                        Trigger for {selectedIds.length}
-                      </Button>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="card-glow">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="flex items-center gap-2 text-base">
-                        <Calendar className="h-5 w-5 text-warning" />
-                        Due Today
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                                             <div className="text-2xl font-bold text-warning mb-2">
-                         {posts.filter(p => {
-                           const today = new Date().toDateString();
-                           return new Date(p.fields['Due Date']).toDateString() === today;
-                         }).length}
-                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        Posts due today
-                      </p>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="card-glow">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="flex items-center gap-2 text-base">
-                        <AlertTriangle className="h-5 w-5 text-danger" />
-                        High Priority
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                                             <div className="text-2xl font-bold text-danger mb-2">
-                         {posts.filter(p => p.fields['Priority'] === 'high' && p.fields['Status'] !== 'done').length}
-                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        High priority pending
-                      </p>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                <KanbanBoard
-                  columns={kanbanColumns}
-                  selectedIds={selectedIds}
-                  onSelectionChange={setSelectedIds}
-                  onItemClick={handleRecordClick}
-                  onStatusChange={handleStatusChange}
-                  service="ig"
-                />
-              </div>
-            ) : (
-              <DataTable
-                data={filteredPosts}
-                columns={tableColumns}
-                selectedIds={selectedIds}
-                onSelectionChange={setSelectedIds}
-                onItemClick={handleRecordClick}
-              />
-            )}
-              </>
-            )}
-
-            {currentView === 'campaigns' && (
-              <CampaignManagementDashboard />
-            )}
-            {currentView === 'viwBoard' && (
-              <CreatorManagementTable />
-            )}
-            {currentView === 'viwAllPosts' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredPosts.map(post => (
-                  <PostPreviewCard
-                    key={post.id}
-                    post={{
-                      id: post.id,
-                      imageUrl: post.fields['Media URL'],
-                      caption: post.fields['Caption'] || '',
-                      status: post.fields['Status'] || 'draft',
-                      scheduledFor: post.fields['Due Date'],
-                      creator: post.fields['Owner'],
-                      metrics: {
-                        likes: 0,
-                        comments: 0,
-                        shares: 0
-                      }
-                    }}
-                    onAction={handleRecordClick}
-                  />
-                ))}
-              </div>
-            )}
-            {currentView === 'viwDueSoon' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredPosts
-                  .filter(p => {
-                    const dueDate = new Date(p.fields['Due Date']);
-                    const tomorrow = new Date();
-                    tomorrow.setDate(tomorrow.getDate() + 1);
-                    return dueDate <= tomorrow;
-                  })
-                  .map(post => (
-                    <PostPreviewCard
-                      key={post.id}
-                      post={{
-                        id: post.id,
-                        imageUrl: post.fields['Media URL'],
-                        caption: post.fields['Caption'] || '',
-                        status: post.fields['Status'] || 'draft',
-                        scheduledFor: post.fields['Due Date'],
-                        creator: post.fields['Owner'],
-                        metrics: {
-                          likes: 0,
-                          comments: 0,
-                          shares: 0
-                        }
-                      }}
-                      onAction={handleRecordClick}
-                    />
-                  ))}
-              </div>
-            )}
-            {currentView === 'viwOwnerMe' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredPosts
-                  .filter(p => p.fields['Owner'] === 'me')
-                  .map(post => (
-                    <PostPreviewCard
-                      key={post.id}
-                      post={{
-                        id: post.id,
-                        imageUrl: post.fields['Media URL'],
-                        caption: post.fields['Caption'] || '',
-                        status: post.fields['Status'] || 'draft',
-                        scheduledFor: post.fields['Due Date'],
-                        creator: post.fields['Owner'],
-                        metrics: {
-                          likes: 0,
-                          comments: 0,
-                          shares: 0
-                        }
-                      }}
-                      onAction={handleRecordClick}
-                    />
-                  ))}
-              </div>
-            )}
-            {currentView === 'viwCompleted' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredPosts
-                  .filter(p => p.fields['Status'] === 'done')
-                  .map(post => (
-                    <PostPreviewCard
-                      key={post.id}
-                      post={{
-                        id: post.id,
-                        imageUrl: post.fields['Media URL'],
-                        caption: post.fields['Caption'] || '',
-                        status: post.fields['Status'] || 'draft',
-                        scheduledFor: post.fields['Due Date'],
-                        creator: post.fields['Owner'],
-                        metrics: {
-                          likes: 0,
-                          comments: 0,
-                          shares: 0
-                        }
-                      }}
-                      onAction={handleRecordClick}
-                    />
-                  ))}
-              </div>
-            )}
-          </div>
-        </SidebarInset>
+        </div>
       </div>
-
-      <BulkBar
-        selectedCount={selectedIds.length}
-        onClear={() => setSelectedIds([])}
-        onBulkAction={handleBulkAction}
-        service="ig"
-      />
-
-      <RecordDrawer
-        open={drawerOpen}
-        onOpenChange={setDrawerOpen}
-        record={selectedRecord}
-        service="ig"
-        onSave={handleRecordSave}
-      />
-    </SidebarProvider>
+    </div>
   );
 };
 

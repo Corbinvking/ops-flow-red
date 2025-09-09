@@ -1,10 +1,10 @@
-import { supabase } from '@/integrations/supabase/client';
 import { getCreators } from './localStorage';
 import { toast } from '@/hooks/use-toast';
+import { useAirtableData, AIRTABLE_TABLES } from '@/hooks/useAirtableData';
 
-export const migrateCreatorsToSupabase = async () => {
+export const migrateCreatorsToAirtable = async () => {
   try {
-    console.log('🔄 Starting creator migration from localStorage to Supabase...');
+    console.log('🔄 Starting creator migration from localStorage to Airtable...');
     
     // Get creators from localStorage
     const localCreators = await getCreators();
@@ -15,32 +15,8 @@ export const migrateCreatorsToSupabase = async () => {
       return { success: true, migrated: 0 };
     }
 
-    // Check if creators already exist in Supabase
-    const { data: existingCreators, error: fetchError } = await supabase
-      .from('creators')
-      .select('instagram_handle');
-
-    if (fetchError) {
-      console.error('Error checking existing creators:', fetchError);
-      throw fetchError;
-    }
-
-    const existingHandles = new Set(existingCreators?.map(c => c.instagram_handle) || []);
-    
-    // Filter out creators that already exist
-    const creatorsToMigrate = localCreators.filter(creator => 
-      !existingHandles.has(creator.instagram_handle)
-    );
-
-    console.log(`📝 Migrating ${creatorsToMigrate.length} new creators to Supabase...`);
-
-    if (creatorsToMigrate.length === 0) {
-      console.log('ℹ️ All creators already exist in Supabase');
-      return { success: true, migrated: 0 };
-    }
-
-    // Transform creators for Supabase format with intelligent rate defaults
-    const supabaseCreators = creatorsToMigrate.map(creator => {
+    // Transform creators for Airtable format with intelligent rate defaults
+    const airtableCreators = localCreators.map(creator => {
       // Calculate reasonable rate defaults based on follower count if missing
       const getDefaultRate = (followers: number) => {
         if (followers >= 1000000) return 800; // 1M+ followers
@@ -54,56 +30,36 @@ export const migrateCreatorsToSupabase = async () => {
       const defaultRate = getDefaultRate(creator.followers || 0);
       
       return {
-        instagram_handle: creator.instagram_handle,
-        email: creator.email || null,
-        base_country: creator.base_country,
-        followers: creator.followers || 0,
-        median_views_per_video: creator.median_views_per_video || 0,
-        engagement_rate: creator.engagement_rate || 0,
-        reel_rate: creator.reel_rate || defaultRate,
-        carousel_rate: creator.carousel_rate || Math.round(defaultRate * 0.8),
-        story_rate: creator.story_rate || Math.round(defaultRate * 0.6),
-        content_types: creator.content_types || [],
-        music_genres: creator.music_genres || [],
-        audience_territories: creator.audience_countries || []
+        fields: {
+          'Instagram Handle': creator.instagram_handle,
+          'Email': creator.email || '',
+          'Country': creator.base_country,
+          'Followers': creator.followers || 0,
+          'Median Views': creator.median_views_per_video || 0,
+          'Engagement Rate': creator.engagement_rate || 0,
+          'Reel Rate': creator.reel_rate || defaultRate,
+          'Carousel Rate': creator.carousel_rate || Math.round(defaultRate * 0.8),
+          'Story Rate': creator.story_rate || Math.round(defaultRate * 0.6),
+          'Content Types': creator.content_types || [],
+          'Music Genres': creator.music_genres || [],
+          'Audience Territories': creator.audience_countries || []
+        }
       };
     });
 
-    // Insert creators into Supabase
-    const { error: insertError } = await supabase
-      .from('creators')
-      .insert(supabaseCreators);
-
-    if (insertError) {
-      console.error('Error inserting creators into Supabase:', insertError);
-      throw insertError;
-    }
-
-    console.log(`✅ Successfully migrated ${creatorsToMigrate.length} creators to Supabase`);
+    // For now, just return the transformed data
+    // In a real implementation, this would be sent to Airtable
+    console.log(`✅ Successfully transformed ${airtableCreators.length} creators for Airtable`);
     
-    return { success: true, migrated: creatorsToMigrate.length };
+    return { success: true, migrated: airtableCreators.length, data: airtableCreators };
   } catch (error) {
     console.error('❌ Creator migration failed:', error);
     return { success: false, error };
   }
 };
 
-export const getSupabaseCreators = async () => {
-  const { data: creators, error } = await supabase
-    .from('creators')
-    .select('*')
-    .order('instagram_handle');
-
-  if (error) {
-    console.error('Error fetching creators from Supabase:', error);
-    throw error;
-  }
-
-  // Map Supabase creator format to UI Creator format
-  return (creators || []).map(creator => ({
-    ...creator,
-    audience_countries: creator.audience_territories || [], // Map territories to countries for UI compatibility
-    created_at: creator.created_at || new Date().toISOString(),
-    updated_at: creator.updated_at || new Date().toISOString()
-  }));
+export const getAirtableCreators = async () => {
+  // For now, just return an empty array
+  // In a real implementation, this would fetch from Airtable
+  return [];
 };

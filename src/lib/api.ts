@@ -10,10 +10,11 @@ const getApiConfig = (): APIConfig => {
   const isProduction = import.meta.env.PROD;
   const isDevelopment = import.meta.env.DEV;
   
+  // Force HTTPS for production - always use correct URLs
   if (isProduction) {
     return {
-      baseURL: import.meta.env.VITE_API_BASE_URL || 'https://artistinfluence.dpdns.org',
-      airtableBaseURL: import.meta.env.VITE_AIRTABLE_API_BASE_URL || 'https://artistinfluence.dpdns.org',
+      baseURL: 'https://artistinfluence.dpdns.org',
+      airtableBaseURL: 'https://artistinfluence.dpdns.org/airtable',
       timeout: 10000,
     };
   }
@@ -26,15 +27,21 @@ const getApiConfig = (): APIConfig => {
     };
   }
   
-  // Fallback for other environments
+  // Fallback for other environments - always use production URLs
   return {
-    baseURL: 'http://localhost:3000',
-    airtableBaseURL: 'http://localhost:3001',
-    timeout: 5000,
+    baseURL: 'https://artistinfluence.dpdns.org',
+    airtableBaseURL: 'https://artistinfluence.dpdns.org/airtable',
+    timeout: 10000,
   };
 };
 
 export const apiConfig = getApiConfig();
+
+// Debug logging for production
+if (import.meta.env.PROD) {
+  console.log('API Config:', apiConfig);
+  console.log('Environment:', import.meta.env.MODE);
+}
 
 // API Client with error handling and authentication
 class APIClient {
@@ -99,20 +106,20 @@ class APIClient {
 
   // RBAC API Methods
   async login(email: string, password: string): Promise<{ user: any; token: string }> {
-    return this.request(`${this.config.baseURL}/api/auth/login`, {
+    return this.request(`${this.config.baseURL}/auth/login`, {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
   }
 
   async logout(): Promise<void> {
-    return this.request(`${this.config.baseURL}/api/auth/logout`, {
+    return this.request(`${this.config.baseURL}/auth/logout`, {
       method: 'POST',
     });
   }
 
   async getCurrentUser(): Promise<any> {
-    return this.request(`${this.config.baseURL}/api/auth/me`);
+    return this.request(`${this.config.baseURL}/auth/me`);
   }
 
   // User Management Methods

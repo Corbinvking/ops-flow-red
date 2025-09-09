@@ -122,7 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession({
           user: response.user,
           token: response.token,
-          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+          expires_at: response.expires_at || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
         });
 
         toast({

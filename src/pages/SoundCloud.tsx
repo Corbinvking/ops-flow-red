@@ -1,387 +1,272 @@
 import React, { useState } from 'react';
-import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
-import { ViewSidebar } from '@/components/ops/ViewSidebar';
-import { Toolbar } from '@/components/ops/Toolbar';
-import { KanbanBoard } from '@/components/ops/KanbanBoard';
-import { DataTable } from '@/components/ops/DataTable';
-import { BulkBar } from '@/components/ops/BulkBar';
-import { RecordDrawer } from '@/components/ops/RecordDrawer';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import SoundCloudNav from '@/components/soundcloud/SoundCloudNav';
+import SubmitTrack from '@/components/soundcloud/SubmitTrack';
+import MemberPortal from '@/components/soundcloud/MemberPortal';
+import Analytics from '@/components/soundcloud/Analytics';
+import Members from '@/components/soundcloud/Members';
 import { 
-  Plus, 
-  Upload, 
-  Download, 
-  Play, 
-  Calendar,
-  Target,
-  Zap
-} from 'lucide-react';
-import { useAirtableData, AIRTABLE_TABLES } from '@/hooks/useAirtableData';
-import { getStatusColor } from '@/lib/ops';
-import SoundCloudQueueManager from '@/components/soundcloud/SoundCloudQueueManager';
-import SoundCloudDashboard from '@/components/soundcloud/SoundCloudDashboard';
-
-type ViewMode = 'operate' | 'data';
+  FileText,
+  Clock,
+  Users,
+  AlertTriangle,
+  MessageSquare,
+  Activity,
+  BarChart3,
+  CheckCircle,
+  Settings,
+  Plus
+} from "lucide-react";
 
 const SoundCloud: React.FC = () => {
-  const [viewMode, setViewMode] = useState<ViewMode>('operate');
   const [currentView, setCurrentView] = useState('overview');
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [selectedRecord, setSelectedRecord] = useState<any>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState('');
-  const [ownerFilter, setOwnerFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
 
-  const { data: campaigns, loading, updateRecord, error } = useAirtableData({ tableName: AIRTABLE_TABLES.SOUNDCLOUD });
+  // Mock data - will be replaced with Airtable data
+  const stats = {
+    newSubmissions: {
+      count: 2,
+      total: 21,
+      label: "Pending review"
+    },
+    todaysQueue: {
+      count: 8,
+      completed: 5,
+      label: "Tracks to support"
+    },
+    activeMembers: {
+      count: 247,
+      change: "+12",
+      label: "Total members"
+    },
+    healthIssues: {
+      count: 3,
+      change: "-2",
+      label: "Need attention"
+    }
+  };
 
-  // Filter campaigns based on search and filters
-  const filteredCampaigns = campaigns.filter(campaign => {
-    const matchesSearch = !searchValue || 
-      campaign.fields['Track Info']?.toLowerCase().includes(searchValue.toLowerCase()) ||
-      campaign.fields['Client']?.toLowerCase().includes(searchValue.toLowerCase());
-    const matchesOwner = !ownerFilter || campaign.fields['Owner'] === ownerFilter;
-    const matchesStatus = !statusFilter || campaign.fields['Status'] === statusFilter;
-    
-    return matchesSearch && matchesOwner && matchesStatus;
-  });
-
-  // Kanban columns for operate mode
-  const kanbanColumns = [
+  const recentActivity = [
     {
-      id: 'active',
-      title: 'Active',
-      items: filteredCampaigns.filter(c => c.fields['Status'] === 'active'),
-      color: 'chip-success'
+      type: "submission",
+      user: "BeatMaker_X",
+      description: "Electronic - Deep House track submitted",
+      timeAgo: "2 minutes ago"
     },
     {
-      id: 'in_progress',
-      title: 'In Progress',
-      items: filteredCampaigns.filter(c => c.fields['Status'] === 'in_progress'),
-      color: 'chip-warning'
-    },
-    {
-      id: 'complete',
-      title: 'Complete',
-      items: filteredCampaigns.filter(c => c.fields['Status'] === 'complete'),
-      color: 'chip-success'
-    },
-    {
-      id: 'cancelled',
-      title: 'Cancelled',
-      items: filteredCampaigns.filter(c => c.fields['Status'] === 'cancelled'),
-      color: 'chip-danger'
+      type: "approval",
+      description: "Hip-Hop track scheduled for tomorrow",
+      timeAgo: "15 minutes ago"
     }
   ];
 
-  // Table columns for data mode
-  const tableColumns = [
-    { 
-      key: 'Track Info', 
-      label: 'Track Info', 
-      sortable: true,
-      render: (value: any, item: any) => item.fields['Track Info'] || '-'
-    },
-    { 
-      key: 'Client', 
-      label: 'Client', 
-      sortable: true,
-      render: (value: any, item: any) => item.fields['Client'] || '-'
-    },
-    { 
-      key: 'Service', 
-      label: 'Service', 
-      sortable: true,
-      render: (value: any, item: any) => item.fields['Service'] || '-'
-    },
-    { 
-      key: 'Goal', 
-      label: 'Goal', 
-      sortable: true,
-      render: (value: any, item: any) => item.fields['Goal'] || '-'
-    },
-    { 
-      key: 'Remaining', 
-      label: 'Remaining', 
-      sortable: true,
-      render: (value: any, item: any) => item.fields['Remaining'] || '-'
-    },
-    { 
-      key: 'Status', 
-      label: 'Status', 
-      sortable: true,
-      render: (value: any, item: any) => item.fields['Status'] || '-'
-    },
-    { 
-      key: 'Owner', 
-      label: 'Owner', 
-      sortable: true,
-      render: (value: any, item: any) => item.fields['Owner'] || '-'
-    },
-    { 
-      key: 'Start Date', 
-      label: 'Start Date', 
-      sortable: true,
-      render: (value: any, item: any) => item.fields['Start Date'] || '-'
-    }
-  ];
-
-  const handleStatusChange = (itemId: string, newStatus: string) => {
-    updateRecord(itemId, { 'Status': newStatus });
-  };
-
-  const handleBulkAction = (action: string, value?: any) => {
-    const updates: any = {};
-    
-    switch (action) {
-      case 'set_status':
-        updates['Status'] = value;
-        break;
-      case 'assign_owner':
-        updates['Owner'] = value;
-        break;
-      case 'set_start_today':
-        updates['Start Date'] = new Date().toISOString().split('T')[0];
-        break;
-      case 'request_receipt':
-        updates['Receipts'] = 'requested';
-        updates['Notes'] = 'Receipt requested on ' + new Date().toLocaleDateString();
-        break;
-    }
-
-    // Update each selected record
-    selectedIds.forEach(id => {
-      updateRecord(id, updates);
-    });
-    setSelectedIds([]);
-  };
-
-  const handleRecordClick = (record: any) => {
-    setSelectedRecord(record);
-    setDrawerOpen(true);
-  };
-
-  const handleRecordSave = (updates: any) => {
-    if (selectedRecord) {
-      updateRecord(selectedRecord.id, updates);
-    }
-  };
-
-  // View counts for sidebar
-  const viewCounts = {
-    viwActiveCampaigns: campaigns.filter(c => c.fields['Status'] === 'active').length,
-    viwUpcoming: campaigns.filter(c => !c.fields['Start Date'] || new Date(c.fields['Start Date']) > new Date()).length,
-    viwNoReceipt: campaigns.filter(c => c.fields['Receipts'] === 'pending').length,
-    viwAllCampaigns: campaigns.length
-  };
-
-  const owners = [...new Set(campaigns.map(c => c.fields['Owner']).filter(Boolean))];
-  const statuses = [...new Set(campaigns.map(c => c.fields['Status']).filter(Boolean))];
-
-  if (loading) {
+  if (currentView === 'submit-track') {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading campaigns...</p>
-        </div>
+      <div>
+        <SoundCloudNav currentView={currentView} onViewChange={setCurrentView} />
+        <SubmitTrack />
+      </div>
+    );
+  }
+
+  if (currentView === 'member-dashboard') {
+    return (
+      <div>
+        <SoundCloudNav currentView={currentView} onViewChange={setCurrentView} />
+        <MemberPortal />
+      </div>
+    );
+  }
+
+  if (currentView === 'analytics') {
+    return (
+      <div>
+        <SoundCloudNav currentView={currentView} onViewChange={setCurrentView} />
+        <Analytics />
+      </div>
+    );
+  }
+
+  if (currentView === 'members') {
+    return (
+      <div>
+        <SoundCloudNav currentView={currentView} onViewChange={setCurrentView} />
+        <Members />
       </div>
     );
   }
 
   return (
-    <SidebarProvider>
-      <div className="flex w-full">
-        <ViewSidebar
-          service="sc"
-          currentView={currentView}
-          onViewChange={setCurrentView}
-          viewCounts={viewCounts}
-        />
-        
-        <SidebarInset>
-          {/* Header */}
-          <div className="sticky top-0 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
-            <div className="flex h-14 items-center gap-4 px-6">
-              <SidebarTrigger />
-              <div className="flex-1" />
-            </div>
-          </div>
+    <div>
+      <SoundCloudNav currentView={currentView} onViewChange={setCurrentView} />
+      <div className="min-h-screen bg-background p-6">
+        {/* Welcome Header */}
+        <div className="rounded-lg bg-gradient-to-r from-red-800 to-orange-700 p-8 mb-6">
+          <h1 className="text-3xl font-bold text-white mb-2">Welcome to your Dashboard</h1>
+          <p className="text-white/90">Manage your SoundCloud Groups efficiently with real-time insights and controls.</p>
+        </div>
 
-          {/* Main Content */}
-          <div className="p-6 space-y-6">
-            {currentView === 'overview' && (
-              <>
-                <Toolbar
-                  title="SoundCloud Campaigns"
-                  description="Manage SoundCloud promotion campaigns and automation queue"
-                  mode={viewMode}
-                  onModeChange={setViewMode}
-                  searchValue={searchValue}
-                  onSearchChange={setSearchValue}
-                  recordCount={filteredCampaigns.length}
-                  selectedCount={selectedIds.length}
-                  filters={[
-                    {
-                      key: 'owner',
-                      label: 'Owner',
-                      value: ownerFilter,
-                      options: owners.map(owner => ({ value: owner, label: owner })),
-                      onChange: setOwnerFilter
-                    },
-                    {
-                      key: 'status',
-                      label: 'Status',
-                      value: statusFilter,
-                      options: statuses.map(status => ({ value: status, label: status })),
-                      onChange: setStatusFilter
-                    }
-                  ]}
-                  actions={[
-                    { label: 'New Campaign', icon: Plus, onClick: () => {} },
-                    { label: 'Import CSV', icon: Upload, onClick: () => {}, variant: 'outline' },
-                    { label: 'Export Queue', icon: Download, onClick: () => {}, variant: 'outline' }
-                  ]}
-                />
-
-                {viewMode === 'operate' ? (
-              <div className="space-y-6">
-                {/* Quick Actions */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Card className="card-glow">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="flex items-center gap-2 text-base">
-                        <Play className="h-5 w-5 text-primary" />
-                        Start Today Macro
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        Set selected campaigns to start today and mark as active
-                      </p>
-                      <Button 
-                        size="sm" 
-                        disabled={selectedIds.length === 0}
-                        onClick={() => handleBulkAction('set_start_today')}
-                      >
-                        Apply to {selectedIds.length} campaigns
-                      </Button>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="card-glow">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="flex items-center gap-2 text-base">
-                        <Target className="h-5 w-5 text-warning" />
-                        Request Receipt
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        Mark campaigns as receipt requested with timestamp
-                      </p>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        disabled={selectedIds.length === 0}
-                        onClick={() => handleBulkAction('request_receipt')}
-                      >
-                        Request for {selectedIds.length}
-                      </Button>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="card-glow">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="flex items-center gap-2 text-base">
-                        <Zap className="h-5 w-5 text-success" />
-                        Queue Generator
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        Generate automation queue for active campaigns
-                      </p>
-                      <Button variant="outline" size="sm">
-                        Generate Queue
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Kanban Board */}
-                <KanbanBoard
-                  columns={kanbanColumns}
-                  selectedIds={selectedIds}
-                  onSelectionChange={setSelectedIds}
-                  onItemClick={handleRecordClick}
-                  onStatusChange={handleStatusChange}
-                  service="sc"
-                />
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {/* New Submissions */}
+          <Card className="bg-card/50 backdrop-blur">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  New Submissions
+                </h3>
+                <span className="text-4xl font-bold">{stats.newSubmissions.count}</span>
               </div>
-            ) : (
-              /* Data Mode */
-              <DataTable
-                data={filteredCampaigns}
-                columns={tableColumns}
-                selectedIds={selectedIds}
-                onSelectionChange={setSelectedIds}
-                onItemClick={handleRecordClick}
-              />
-            )}
-              </>
-            )}
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>{stats.newSubmissions.label}</span>
+                <Badge variant="outline">{stats.newSubmissions.total} total</Badge>
+              </div>
+            </CardContent>
+          </Card>
 
-            {currentView === 'queue' && (
-              <SoundCloudDashboard />
-            )}
-            {currentView === 'viwActiveCampaigns' && (
-              <SoundCloudDashboard />
-            )}
-            {currentView === 'viwUpcoming' && (
-              <SoundCloudDashboard />
-            )}
-            {currentView === 'viwNoReceipt' && (
-              <SoundCloudDashboard />
-            )}
-            {currentView === 'viwNoStartDate' && (
-              <SoundCloudDashboard />
-            )}
-            {currentView === 'viwPastMonth' && (
-              <SoundCloudDashboard />
-            )}
-            {currentView === 'viwInvoiceNotPaid' && (
-              <SoundCloudDashboard />
-            )}
-            {currentView === 'viwAllCampaigns' && (
-              <SoundCloudDashboard />
-            )}
-            {currentView === 'viwKanban' && (
-              <SoundCloudDashboard />
-            )}
-          </div>
-        </SidebarInset>
+          {/* Today's Queue */}
+          <Card className="bg-card/50 backdrop-blur border-red-600/20">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Today's Queue
+                </h3>
+                <span className="text-4xl font-bold">{stats.todaysQueue.count}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>{stats.todaysQueue.label}</span>
+                <Badge variant="secondary">{stats.todaysQueue.completed} completed</Badge>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Active Members */}
+          <Card className="bg-card/50 backdrop-blur">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Active Members
+                </h3>
+                <span className="text-4xl font-bold">{stats.activeMembers.count}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>{stats.activeMembers.label}</span>
+                <Badge variant="success">{stats.activeMembers.change}</Badge>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Health Issues */}
+          <Card className="bg-card/50 backdrop-blur">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5" />
+                  Health Issues
+                </h3>
+                <span className="text-4xl font-bold">{stats.healthIssues.count}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>{stats.healthIssues.label}</span>
+                <Badge variant="destructive">{stats.healthIssues.change}</Badge>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Activity and Actions Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Recent Activity */}
+          <Card className="bg-card/50 backdrop-blur">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5" />
+                Recent Activity
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">Latest updates across your dashboard</p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {recentActivity.map((activity, index) => (
+                  <div key={index} className="flex items-start gap-4 p-3 rounded-lg bg-muted/50">
+                    <div className={`rounded-full p-2 ${
+                      activity.type === 'submission' ? 'bg-primary/10 text-primary' : 'bg-success/10 text-success'
+                    }`}>
+                      {activity.type === 'submission' ? (
+                        <MessageSquare className="h-4 w-4" />
+                      ) : (
+                        <CheckCircle className="h-4 w-4" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      {activity.user && (
+                        <p className="font-medium">New submission from {activity.user}</p>
+                      )}
+                      <p className="text-sm text-muted-foreground">{activity.description}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{activity.timeAgo}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Quick Actions */}
+          <Card className="bg-card/50 backdrop-blur">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                Quick Actions
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">Common tasks and shortcuts</p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <Button 
+                  className="w-full justify-start gap-2" 
+                  variant="default"
+                  onClick={() => setCurrentView('submit-track')}
+                >
+                  <FileText className="h-4 w-4" />
+                  Review New Submissions
+                  <Badge className="ml-auto">2</Badge>
+                </Button>
+                <Button 
+                  className="w-full justify-start gap-2" 
+                  variant="outline"
+                  onClick={() => setCurrentView('member-dashboard')}
+                >
+                  <Clock className="h-4 w-4" />
+                  Check Today's Queue
+                  <Badge variant="secondary" className="ml-auto">8</Badge>
+                </Button>
+                <Button 
+                  className="w-full justify-start gap-2" 
+                  variant="outline"
+                  onClick={() => setCurrentView('members')}
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  Handle Inquiries
+                </Button>
+                <Button 
+                  className="w-full justify-start gap-2" 
+                  variant="outline"
+                  onClick={() => setCurrentView('analytics')}
+                >
+                  <Settings className="h-4 w-4" />
+                  Configure Settings
+                  <Badge variant="destructive" className="ml-auto">3</Badge>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-
-      {/* Bulk Actions Bar */}
-      <BulkBar
-        selectedCount={selectedIds.length}
-        onClear={() => setSelectedIds([])}
-        onBulkAction={handleBulkAction}
-        service="sc"
-      />
-
-      {/* Record Drawer */}
-      <RecordDrawer
-        open={drawerOpen}
-        onOpenChange={setDrawerOpen}
-        record={selectedRecord}
-        service="sc"
-        onSave={handleRecordSave}
-      />
-    </SidebarProvider>
+    </div>
   );
 };
 

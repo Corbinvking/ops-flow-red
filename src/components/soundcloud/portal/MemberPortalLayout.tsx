@@ -1,139 +1,123 @@
 import React from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { 
-  SidebarProvider, 
-  Sidebar, 
-  SidebarContent, 
-  SidebarGroup, 
-  SidebarGroupContent, 
-  SidebarGroupLabel, 
-  SidebarMenu, 
-  SidebarMenuItem, 
-  SidebarMenuButton,
-  SidebarTrigger,
-  SidebarHeader,
-  SidebarFooter
-} from '@/components/ui/sidebar';
-import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/AuthContext';
-import { Home, Upload, History, User, LogOut, Music, Calendar, Coins, BarChart3 } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
+  Music, 
+  Users, 
+  Calendar, 
+  Target, 
+  Play,
+  History,
+  Settings,
+  CreditCard,
+  BarChart3
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-const navigation = [
-  { name: 'Dashboard', href: '/portal', icon: Home, exact: true },
-  { name: 'My Queue', href: '/portal/queue', icon: Calendar },
-  { name: 'Submit Track', href: '/portal/submit', icon: Upload },
-  { name: 'My History', href: '/portal/history', icon: History },
-  { name: 'Credits', href: '/portal/credits', icon: Coins },
-  { name: 'Analytics', href: '/portal/analytics', icon: BarChart3 },
-  { name: 'Profile', href: '/portal/profile', icon: User },
-];
+interface MemberPortalLayoutProps {
+  children: React.ReactNode;
+}
 
-export const MemberPortalLayout = () => {
-  const { member, signOut, isAdmin, isModerator } = useAuth();
-  const location = useLocation();
+const MemberPortalLayout: React.FC<MemberPortalLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/');
-  };
-
-  const isActive = (href: string, exact = false) => {
-    if (exact) {
-      return location.pathname === href;
-    }
-    return location.pathname.startsWith(href);
+  const stats = {
+    credits: 500,
+    activeSubmissions: 12,
+    totalPlays: "1.2M",
+    recentEngagement: "4.8%"
   };
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        <Sidebar>
-          <SidebarHeader className="border-b border-sidebar-border p-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-                <Music className="h-4 w-4 text-primary-foreground" />
-              </div>
-              <div>
-                <h2 className="font-semibold text-sidebar-foreground">Artist Portal</h2>
-                <p className="text-xs text-sidebar-foreground/60">{member?.name}</p>
-              </div>
-            </div>
-          </SidebarHeader>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-6 py-8">
+        {/* Header Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <CreditCard className="h-5 w-5 text-primary" />
+                Available Credits
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.credits}</div>
+              <p className="text-sm text-muted-foreground">Credits to use</p>
+            </CardContent>
+          </Card>
 
-          <SidebarContent>
-            <SidebarGroup>
-              <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {navigation.map((item) => (
-                    <SidebarMenuItem key={item.name}>
-                      <SidebarMenuButton 
-                        asChild
-                        className={isActive(item.href, item.exact) 
-                          ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" 
-                          : ""
-                        }
-                      >
-                        <NavLink to={item.href}>
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.name}</span>
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Music className="h-5 w-5 text-warning" />
+                Active Submissions
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.activeSubmissions}</div>
+              <p className="text-sm text-muted-foreground">In progress</p>
+            </CardContent>
+          </Card>
 
-            {/* Admin access notice */}
-            {(isAdmin || isModerator) && (
-              <SidebarGroup>
-                <SidebarGroupLabel>Quick Access</SidebarGroupLabel>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    <SidebarMenuItem>
-                      <SidebarMenuButton asChild>
-                        <NavLink to="/dashboard">
-                          <User className="h-4 w-4" />
-                          <span>Admin Dashboard</span>
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-            )}
-          </SidebarContent>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Play className="h-5 w-5 text-success" />
+                Total Plays
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalPlays}</div>
+              <p className="text-sm text-muted-foreground">Across all tracks</p>
+            </CardContent>
+          </Card>
 
-          <SidebarFooter className="p-4 border-t border-sidebar-border">
-            <Button 
-              variant="ghost" 
-              onClick={handleSignOut} 
-              className="w-full justify-start text-sidebar-foreground hover:text-accent hover:bg-accent/10"
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
-            </Button>
-          </SidebarFooter>
-        </Sidebar>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <BarChart3 className="h-5 w-5 text-accent" />
+                Recent Engagement
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.recentEngagement}</div>
+              <p className="text-sm text-muted-foreground">Last 30 days</p>
+            </CardContent>
+          </Card>
+        </div>
 
-        <div className="flex-1 flex flex-col min-h-screen">
-          <header className="h-14 border-b border-border bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 flex items-center">
-            <SidebarTrigger />
-            <div className="ml-4">
-              <h1 className="text-lg font-semibold text-foreground">
-                {navigation.find(nav => isActive(nav.href, nav.exact))?.name || 'Portal'}
-              </h1>
-            </div>
-          </header>
-          
-          <main className="flex-1 overflow-auto">
-            <Outlet />
-          </main>
+        {/* Navigation */}
+        <div className="flex flex-wrap gap-4 mb-8">
+          <Button variant="outline" onClick={() => navigate('/dashboard')}>
+            <Target className="h-4 w-4 mr-2" />
+            Dashboard
+          </Button>
+          <Button variant="outline" onClick={() => navigate('/submissions')}>
+            <Music className="h-4 w-4 mr-2" />
+            Submit Track
+          </Button>
+          <Button variant="outline" onClick={() => navigate('/queue')}>
+            <Calendar className="h-4 w-4 mr-2" />
+            Queue
+          </Button>
+          <Button variant="outline" onClick={() => navigate('/history')}>
+            <History className="h-4 w-4 mr-2" />
+            History
+          </Button>
+          <Button variant="outline" onClick={() => navigate('/settings')}>
+            <Settings className="h-4 w-4 mr-2" />
+            Settings
+          </Button>
+        </div>
+
+        {/* Main Content */}
+        <div className="space-y-6">
+          {children}
         </div>
       </div>
-    </SidebarProvider>
+    </div>
   );
 };
+
+export default MemberPortalLayout;

@@ -8,8 +8,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Plus, UserPlus } from "lucide-react";
 import { Creator } from "@/lib/types";
 import { formatNumber, formatCurrency } from "@/lib/localStorage";
-import { getSupabaseCreators } from "@/lib/creatorMigration";
+import { getAirtableCreators } from "@/lib/creatorMigration";
 import { AddCreatorForm } from "./AddCreatorForm";
+import { useAirtableData, AIRTABLE_TABLES } from '@/hooks/useAirtableData';
 
 interface CreatorSearchModalProps {
   isOpen: boolean;
@@ -24,17 +25,35 @@ export function CreatorSearchModal({ isOpen, onClose, onSelectCreator, selectedC
   const [filteredCreators, setFilteredCreators] = useState<Creator[]>([]);
   const [activeTab, setActiveTab] = useState("search");
 
+  // Use Airtable data
+  const { data: airtableData, loading } = useAirtableData({ tableName: AIRTABLE_TABLES.CREATORS });
+
   useEffect(() => {
     if (isOpen) {
       const fetchCreators = async () => {
-        // Fetch all creators from Supabase without eligibility filtering
-        const allCreators = await getSupabaseCreators();
-        setCreators(allCreators);
-        setFilteredCreators(allCreators);
+        // Transform Airtable data to Creator format
+        const transformedCreators = airtableData.map(record => ({
+          id: record.id,
+          instagram_handle: record.fields['Instagram Handle'] || '',
+          email: record.fields['Email'] || '',
+          base_country: record.fields['Country'] || '',
+          followers: record.fields['Followers'] || 0,
+          median_views_per_video: record.fields['Median Views'] || 0,
+          engagement_rate: record.fields['Engagement Rate'] || 0,
+          reel_rate: record.fields['Reel Rate'] || 0,
+          carousel_rate: record.fields['Carousel Rate'] || 0,
+          story_rate: record.fields['Story Rate'] || 0,
+          content_types: record.fields['Content Types'] || [],
+          music_genres: record.fields['Music Genres'] || [],
+          audience_countries: record.fields['Audience Territories'] || []
+        }));
+
+        setCreators(transformedCreators);
+        setFilteredCreators(transformedCreators);
       };
       fetchCreators();
     }
-  }, [isOpen]);
+  }, [isOpen, airtableData]);
 
   useEffect(() => {
     if (!searchQuery.trim()) {
@@ -66,12 +85,24 @@ export function CreatorSearchModal({ isOpen, onClose, onSelectCreator, selectedC
   };
 
   const handleCreatorAdded = async () => {
-    // Refresh the creators list
-    const allCreators = await getSupabaseCreators();
-    setCreators(allCreators);
-    setFilteredCreators(allCreators);
+    // Refresh will happen automatically through Airtable hook
     setActiveTab("search");
   };
+
+  if (loading) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-6xl max-h-[80vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle className="font-bebas text-2xl tracking-wide">Loading creators...</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center h-48">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

@@ -30,7 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useCampaignData, useInvoiceData, useInvoiceRequestsData } from '@/hooks/useAirtableData';
+import { useSpotifyData } from '@/hooks/useAirtableTabs';
 import { KPIData, Campaign, Invoice, Alert } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
@@ -43,20 +43,15 @@ const Dashboard: React.FC = () => {
     loading: campaignsLoading, 
     error: campaignsError,
     updateRecord: updateCampaign 
-  } = useCampaignData();
+  } = useSpotifyData();
   
-  const { 
-    data: invoices, 
-    loading: invoicesLoading, 
-    error: invoicesError,
-    updateRecord: updateInvoice 
-  } = useInvoiceData();
-  
-  const { 
-    data: invoiceRequests, 
-    loading: requestsLoading, 
-    error: requestsError 
-  } = useInvoiceRequestsData();
+  // Invoice tables removed - not available in current Airtable base
+  const invoices: any[] = [];
+  const invoiceRequests: any[] = [];
+  const invoicesLoading = false;
+  const requestsLoading = false;
+  const invoicesError = null;
+  const requestsError = null;
 
   // Mock alerts data (TODO: Replace with real alerts from Airtable)
   const alerts = [
