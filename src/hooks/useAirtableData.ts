@@ -47,7 +47,7 @@ export const AIRTABLE_TABLES = {
   spotify: {
     name: 'spotify',
     displayName: 'Spotify Playlisting',
-    readFields: ['Campaign', 'Start Date', 'URL', 'Client', 'Name (from Clients)', 'Goal', 'Salesperson', 'Status', 'Vendor', 'Sale price', 'Invoice', 'Ask For SFA', 'Email (from Client)', 'Name (from Client)', 'Client Email', 'Vendor Email'],
+    readFields: [], // Use all available fields from Airtable
     writeFields: ['Campaign', 'Start Date', 'URL', 'Goal', 'Status', 'Sale price', 'Invoice'],
     requiredRoles: ['admin', 'manager']
   },
