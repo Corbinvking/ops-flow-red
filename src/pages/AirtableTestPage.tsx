@@ -387,12 +387,32 @@ export const AirtableTestPage: React.FC = () => {
                   <div key={record.id} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-medium">{safeField(record, 'campaign', 'Untitled Campaign')}</h3>
+                        <h3 className="font-medium">{safeField(record, 'Campaign', safeField(record, 'campaign', 'Untitled Campaign'))}</h3>
                         <p className="text-sm text-muted-foreground">
-                          Status: {safeField(record, 'status')} | 
-                          Spend: ${safeField(record, 'spend', '0')} | 
-                          Remaining: ${safeField(record, 'remaining', '0')}
+                          Status: {safeField(record, 'Status', safeField(record, 'status', 'N/A'))} | 
+                          Spend: ${safeField(record, 'Spend', safeField(record, 'spend', '0'))} | 
+                          Remaining: ${safeField(record, 'Remaining', safeField(record, 'remaining', '0'))}
                         </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleUpdateRecord(record.id, 'Completed')}
+                          disabled={!instagram.hasWritePermission}
+                        >
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          Complete
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleUpdateRecord(record.id, 'Paused')}
+                          disabled={!instagram.hasWritePermission}
+                        >
+                          <Pause className="h-4 w-4 mr-1" />
+                          Pause
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -422,12 +442,32 @@ export const AirtableTestPage: React.FC = () => {
                   <div key={record.id} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-medium">{safeField(record, 'track_info', 'Untitled Track')}</h3>
+                        <h3 className="font-medium">{safeField(record, 'Track Info', safeField(record, 'track_info', 'Untitled Track'))}</h3>
                         <p className="text-sm text-muted-foreground">
-                          Service: {safeField(record, 'service_type')} | 
-                          Status: {safeField(record, 'status')} | 
-                          Price: ${safeField(record, 'sale_price', '0')}
+                          Service: {safeField(record, 'Service Type', safeField(record, 'service_type', 'N/A'))} | 
+                          Status: {safeField(record, 'Status', safeField(record, 'status', 'N/A'))} | 
+                          Price: ${safeField(record, 'Sale Price', safeField(record, 'sale_price', '0'))}
                         </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleUpdateRecord(record.id, 'Completed')}
+                          disabled={!soundcloud.hasWritePermission}
+                        >
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          Complete
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleUpdateRecord(record.id, 'Paused')}
+                          disabled={!soundcloud.hasWritePermission}
+                        >
+                          <Pause className="h-4 w-4 mr-1" />
+                          Pause
+                        </Button>
                       </div>
                     </div>
                   </div>
