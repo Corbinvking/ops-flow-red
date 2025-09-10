@@ -493,23 +493,23 @@ export const AirtableTestPage: React.FC = () => {
           <CardContent>
             <div className="space-y-3">
               {sync.syncStatus.map((table) => (
-                <div key={table.table} className="flex items-center justify-between p-3 border rounded-lg">
+                <div key={table?.table || `table-${Math.random()}`} className="flex items-center justify-between p-3 border rounded-lg">
                   <div className="flex items-center gap-3">
                     <div className="font-medium capitalize">
-                      {table.table.replace('_', ' ')}
+                      {table?.table?.replace('_', ' ') || 'Unknown Table'}
                     </div>
                     <Badge 
-                      variant={table.status === 'completed' ? 'default' : 'destructive'}
+                      variant={table?.status === 'completed' ? 'default' : 'destructive'}
                     >
-                      {table.status}
+                      {table?.status || 'unknown'}
                     </Badge>
                   </div>
                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span>{table.recordsSynced} records</span>
+                    <span>{table?.recordsSynced || 0} records</span>
                     <span>
-                      {new Date(table.lastSync).toLocaleString()}
+                      {table?.lastSync ? new Date(table.lastSync).toLocaleString() : 'Never'}
                     </span>
-                    {table.hasErrors && (
+                    {table?.hasErrors && (
                       <AlertCircle className="h-4 w-4 text-destructive" />
                     )}
                   </div>

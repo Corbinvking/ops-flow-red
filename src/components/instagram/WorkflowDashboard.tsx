@@ -227,9 +227,9 @@ export const WorkflowDashboard = () => {
                     <div>
                       <div className="font-medium">{rule.name}</div>
                       <div className="text-sm text-muted-foreground">
-                        When {rule.trigger.field} {rule.trigger.condition.replace('_', ' ')} "{rule.trigger.value}"
+                        When {rule?.trigger?.field || 'field'} {rule?.trigger?.condition?.replace('_', ' ') || 'condition'} "{rule?.trigger?.value || 'value'}"
                         <ArrowRight className="inline mx-2 h-3 w-3" />
-                        Set {rule.action.field} to "{rule.action.value}"
+                        Set {rule?.action?.field || 'field'} to "{rule?.action?.value || 'value'}"
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">

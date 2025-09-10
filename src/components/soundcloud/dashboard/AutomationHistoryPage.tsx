@@ -247,7 +247,7 @@ export const AutomationHistoryPage = () => {
               <Card key={health.id}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">
-                    {health.automation_name.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                    {health?.automation_name?.replace(/-/g, ' ')?.replace(/\b\w/g, l => l.toUpperCase()) || 'Unknown Automation'}
                   </CardTitle>
                   {getStatusIcon(health.status)}
                 </CardHeader>

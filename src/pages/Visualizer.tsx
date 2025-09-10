@@ -354,7 +354,7 @@ const Visualizer: React.FC = () => {
                         <p className="text-xs text-foreground-muted">{lead.email}</p>
                       </div>
                       <Badge className={getStatusColor(lead.status)}>
-                        {lead.status.replace('_', ' ')}
+                        {lead?.status?.replace('_', ' ') || 'Unknown'}
                       </Badge>
                     </div>
                     

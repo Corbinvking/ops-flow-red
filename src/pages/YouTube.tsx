@@ -254,7 +254,7 @@ const YouTube: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     <Badge className={getActionColor(video.fields['Recommended Action'] || 'maintain')}>
-                      {(video.fields['Recommended Action'] || 'maintain').replace('_', ' ')}
+                      {(video?.fields?.['Recommended Action'] || 'maintain').replace('_', ' ')}
                     </Badge>
                   </TableCell>
                   <TableCell>

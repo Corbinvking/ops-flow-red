@@ -838,7 +838,7 @@ export const EnhancedQueueManagement: React.FC = () => {
                     <Alert key={index} className="border-orange-200 bg-orange-50">
                       <AlertCircle className="h-4 w-4 text-orange-500" />
                       <AlertDescription>
-                        <span className="font-medium">{conflict.type.replace('_', ' ').toUpperCase()}:</span> {conflict.message}
+                        <span className="font-medium">{conflict?.type?.replace('_', ' ')?.toUpperCase() || 'UNKNOWN'}:</span> {conflict?.message || 'No details available'}
                       </AlertDescription>
                     </Alert>
                   ))}
