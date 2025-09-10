@@ -27,6 +27,17 @@ import {
   Save
 } from 'lucide-react';
 
+// Safe field accessor helper to prevent undefined .replace() errors
+const safeField = (record: any, fieldName: string, defaultValue: any = 'N/A'): string => {
+  const value = record?.fields?.[fieldName];
+  if (value === null || value === undefined) return String(defaultValue);
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number') return value.toString();
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  if (Array.isArray(value)) return value.join(', ');
+  return String(value);
+};
+
 export const AirtableTestPage: React.FC = () => {
   const [testRecord, setTestRecord] = useState({
     Campaign: '',
@@ -321,11 +332,11 @@ export const AirtableTestPage: React.FC = () => {
                   <div key={record.id} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-medium">{record.fields.Campaign || 'Untitled Campaign'}</h3>
+                        <h3 className="font-medium">{safeField(record, 'Campaign', 'Untitled Campaign')}</h3>
                         <p className="text-sm text-muted-foreground">
-                          Status: {record.fields.Status} | 
-                          Price: ${record.fields['Sale price'] || 0} | 
-                          Goal: {record.fields.Goal || 'N/A'}
+                          Status: {safeField(record, 'Status')} | 
+                          Price: ${safeField(record, 'Sale price', '0')} | 
+                          Goal: {safeField(record, 'Goal')}
                         </p>
                       </div>
                       <div className="flex gap-2">
@@ -376,11 +387,11 @@ export const AirtableTestPage: React.FC = () => {
                   <div key={record.id} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-medium">{record.fields.campaign || 'Untitled Campaign'}</h3>
+                        <h3 className="font-medium">{safeField(record, 'campaign', 'Untitled Campaign')}</h3>
                         <p className="text-sm text-muted-foreground">
-                          Status: {record.fields.status} | 
-                          Spend: ${record.fields.spend || 0} | 
-                          Remaining: ${record.fields.remaining || 0}
+                          Status: {safeField(record, 'status')} | 
+                          Spend: ${safeField(record, 'spend', '0')} | 
+                          Remaining: ${safeField(record, 'remaining', '0')}
                         </p>
                       </div>
                     </div>
@@ -411,11 +422,11 @@ export const AirtableTestPage: React.FC = () => {
                   <div key={record.id} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-medium">{record.fields.track_info || 'Untitled Track'}</h3>
+                        <h3 className="font-medium">{safeField(record, 'track_info', 'Untitled Track')}</h3>
                         <p className="text-sm text-muted-foreground">
-                          Service: {record.fields.service_type} | 
-                          Status: {record.fields.status} | 
-                          Price: ${record.fields.sale_price || 0}
+                          Service: {safeField(record, 'service_type')} | 
+                          Status: {safeField(record, 'status')} | 
+                          Price: ${safeField(record, 'sale_price', '0')}
                         </p>
                       </div>
                     </div>
@@ -446,11 +457,11 @@ export const AirtableTestPage: React.FC = () => {
                   <div key={record.id} className="border rounded-lg p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-medium">{record.fields.Campaign || 'Untitled Campaign'}</h3>
+                        <h3 className="font-medium">{safeField(record, 'Campaign', 'Untitled Campaign')}</h3>
                         <p className="text-sm text-muted-foreground">
-                          Service: {record.fields['Service Type']} | 
-                          Status: {record.fields.Status} | 
-                          Price: ${record.fields['Sale Price'] || 0}
+                          Service: {safeField(record, 'Service Type')} | 
+                          Status: {safeField(record, 'Status')} | 
+                          Price: ${safeField(record, 'Sale Price', '0')}
                         </p>
                       </div>
                     </div>
